@@ -32,3 +32,7 @@ export async function createEventWithSeats(seatCount: number) {
 
     return { event, section, seats: seatRows };
 };
+
+export async function warmPool(connections = 50) {
+  await Promise.all(Array.from({ length: connections }, () => pool.query("select 1")));
+}

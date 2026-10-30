@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "../db/client.js";
 import { seats } from "../db/schema.js";
-import { createEventWithSeats, resetDb } from "../test/factories.js";
+import { createEventWithSeats, resetDb, warmPool } from "../test/factories.js";
 import { holdSeats } from "./holds.js";
 
 describe("holdSeats", () => {
@@ -12,6 +12,7 @@ describe("holdSeats", () => {
 
     it("C1: 200 buyers race for one seat, exactly one wins", async () => {
         const { event, seats: [seat] } = await createEventWithSeats(1);
+        await warmPool();
 
         const results = await Promise.all(
             Array.from({ length: 200 }, (_, i) =>

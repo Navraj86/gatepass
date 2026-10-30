@@ -8,5 +8,5 @@ if(!url) {
     throw new Error("DATABASE_URL is not set");
 }
 
-export const pool = new Pool({ connectionString: url });
+export const pool = new Pool({ connectionString: url, max: Number(process.env.DB_POOL_MAX ?? 10) });
 export const db = drizzle(pool, { schema });
