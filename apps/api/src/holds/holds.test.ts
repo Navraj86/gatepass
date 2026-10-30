@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "../db/client.js";
 import { seats } from "../db/schema.js";
 import { createEventWithSeats, resetDb, warmPool } from "../test/factories.js";
-import { holdSeats } from "./holds.js";
+import { holdSeats, releaseHolds } from "./holds.js";
 
 describe("holdSeats", () => {
     beforeEach(async () => {
@@ -107,4 +107,70 @@ describe("holdSeats", () => {
 
     expect(result.ok).toBe(false);
     });
+
+    it("refuses holds before the sale starts", async () => {
+    const { event, seats: [seat] } = await createEventWithSeats(1, {
+        saleStartsAt: new Date(Date.now() + 60 * 60 * 1000),
+    });
+
+    const result = await holdSeats({ userId: "user-1", eventId: event.id, seatIds: [seat.id] });
+
+    expect(result).toEqual({ ok: false, reason: "not_on_sale" });
+    });
+
+    it("refuses holds on a draft event", async () => {
+    const { event, seats: [seat] } = await createEventWithSeats(1, { status: "draft" });
+
+    const result = await holdSeats({ userId: "user-1", eventId: event.id, seatIds: [seat.id] });
+
+    expect(result).toEqual({ ok: false, reason: "not_on_sale" });
+    });
+
+    it("limits each buyer to 6 seats per event", async () => {
+    const { event, seats: s } = await createEventWithSeats(7);
+    const ids = s.map((x) => x.id);
+
+    const first = await holdSeats({ userId: "user-1", eventId: event.id, seatIds: ids.slice(0, 4) });
+    expect(first.ok).toBe(true);
+
+    const tooMany = await holdSeats({ userId: "user-1", eventId: event.id, seatIds: ids.slice(4, 7) });
+    expect(tooMany).toEqual({ ok: false, reason: "limit_exceeded" });
+
+    const upToLimit = await holdSeats({ userId: "user-1", eventId: event.id, seatIds: ids.slice(4, 6) });
+    expect(upToLimit.ok).toBe(true);
+    });
+
+    it("enforces the limit when one buyer sends parallel requests", async () => {
+    const { event, seats: s } = await createEventWithSeats(10);
+    await warmPool();
+
+    const results = await Promise.all(
+        s.map((seat) => holdSeats({ userId: "greedy", eventId: event.id, seatIds: [seat.id] })),
+    );
+
+    expect(results.filter((r) => r.ok)).toHaveLength(6);
+    expect(results.filter((r) => !r.ok && r.reason === "limit_exceeded")).toHaveLength(4);
+    });
+});
+
+describe("releaseHolds", () => {
+  beforeEach(async () => {
+    await resetDb();
+  });
+
+  it("frees only the caller's holds", async () => {
+    const { event, seats: [s1, s2, s3] } = await createEventWithSeats(3);
+    await holdSeats({ userId: "user-1", eventId: event.id, seatIds: [s1.id, s2.id] });
+    await holdSeats({ userId: "user-2", eventId: event.id, seatIds: [s3.id] });
+
+    const released = await releaseHolds({ userId: "user-1", eventId: event.id });
+
+    expect(released.sort()).toEqual([s1.id, s2.id].sort());
+
+    const rows = await db.select().from(seats).where(eq(seats.eventId, event.id));
+    const holderOf = new Map(rows.map((r) => [r.id, r.heldBy]));
+    expect(holderOf.get(s1.id)).toBeNull();
+    expect(holderOf.get(s2.id)).toBeNull();
+    expect(holderOf.get(s3.id)).toBe("user-2");
+  });
 });

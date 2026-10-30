@@ -5,7 +5,7 @@ export async function resetDb() {
     await pool.query("truncate seats, sections, events cascade");
 }
 
-export async function createEventWithSeats(seatCount: number) {
+export async function createEventWithSeats(seatCount: number, overrides: Partial<typeof events.$inferInsert> = {}) {
     const [event] = await db.insert(events).values({
         organizerId: "organizer-1",
         title: "Test Show",
@@ -13,6 +13,7 @@ export async function createEventWithSeats(seatCount: number) {
         startsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         saleStartsAt: new Date(Date.now() - 60 * 1000),
         status: "published",
+        ...overrides,
     }).returning();
 
     const [section] = await db.insert(sections).values({
