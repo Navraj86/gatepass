@@ -21,6 +21,7 @@ export async function holdSeats({ userId, eventId, seatIds }: HoldInput): Promis
   const client = await pool.connect();
   try {
     await client.query("begin");
+    await client.query("set local lock_timeout = '2s'");
 
     const { rows } = await client.query<{ id: string; held_until: Date }>(
       `with locked as (
@@ -30,7 +31,7 @@ export async function holdSeats({ userId, eventId, seatIds }: HoldInput): Promis
            and status = 'available'
            and (held_until is null or held_until < now())
          order by id
-         for update skip locked
+         for update
        )
        update seats s
        set held_by = $1,
@@ -50,9 +51,16 @@ export async function holdSeats({ userId, eventId, seatIds }: HoldInput): Promis
     await client.query("commit");
     return { ok: true, seatIds: rows.map((r) => r.id), heldUntil: rows[0].held_until };
   } catch (err) {
-    await client.query("rollback");
-    throw err;
+      await client.query("rollback");
+      if (isLockTimeout(err)) {
+        return { ok: false, reason: "conflict" };
+      }
+      throw err;
   } finally {
     client.release();
   }
+}
+
+function isLockTimeout(err: unknown): boolean {
+  return typeof err === "object" && err !== null && "code" in err && err.code === "55P03";
 }
