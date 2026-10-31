@@ -1,0 +1,37 @@
+@base = http://localhost:4000
+@event = 987dc195-01f4-490e-9bae-dad5c257a461
+@seat = d1a56bbb-3870-4cb0-a846-6574dc38efea
+
+### Seat map
+GET {{base}}/api/events/{{event}}/seats
+
+### Hold a seat as user-1 (expect 201)
+POST {{base}}/api/events/{{event}}/holds
+x-user-id: user-1
+Content-Type: application/json
+
+{ "seatIds": ["{{seat}}"] }
+
+### Same seat as user-2 (expect 409)
+POST {{base}}/api/events/{{event}}/holds
+x-user-id: user-2
+Content-Type: application/json
+
+{ "seatIds": ["{{seat}}"] }
+
+### Empty seat list (expect 400)
+POST {{base}}/api/events/{{event}}/holds
+x-user-id: user-1
+Content-Type: application/json
+
+{ "seatIds": [] }
+
+### No user header (expect 401)
+POST {{base}}/api/events/{{event}}/holds
+Content-Type: application/json
+
+{ "seatIds": ["{{seat}}"] }
+
+### Release user-1's holds
+DELETE {{base}}/api/events/{{event}}/holds
+x-user-id: user-1
