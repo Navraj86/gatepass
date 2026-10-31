@@ -21,7 +21,7 @@ describe("holdSeats", () => {
         );
 
         const winners = results.flatMap((r, i) => (r.ok ? [i] : []));
-        expect(winners).toHaveLength(2);
+        expect(winners).toHaveLength(1);
 
         const losers = results.filter((r) => !r.ok);
         expect(losers).toHaveLength(199);
