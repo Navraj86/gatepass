@@ -14,6 +14,31 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+  
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    command: ["node", "dist/db/migrate.js"]
+    environment:
+      DATABASE_URL: postgres://gatepass:gatepass@postgres:5432/gatepass
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      DATABASE_URL: postgres://gatepass:gatepass@postgres:5432/gatepass
+      PORT: "4000"
+      DEV_AUTH: "true"
+    ports:
+      - "4001:4000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   pgdata:
