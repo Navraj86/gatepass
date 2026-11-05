@@ -35,3 +35,10 @@ Content-Type: application/json
 ### Release user-1's holds
 DELETE {{base}}/api/events/{{event}}/holds
 x-user-id: user-1
+
+### Checkout (expect 201 with a checkoutUrl)
+POST {{base}}/api/orders
+x-user-id: user-1
+Content-Type: application/json
+
+{ "eventId": "{{event}}", "email": "you@example.com", "name": "Navraj", "country": "IN", "zipcode": "151001" }

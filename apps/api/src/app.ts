@@ -1,9 +1,12 @@
 import express, { type NextFunction, type Request, type Response } from "express";
 import { pool } from "./db/client.js";
 import { seatsRouter } from "./seats/routes.js";
+import { webhookRouter } from "./payments/routes.js";
+import { ordersRouter } from "./orders/routes.js";
 
 export function createApp() {
     const app = express();
+    app.use("/api", webhookRouter);
     app.use(express.json());
 
     app.get("/health", (_req, res) => {
@@ -20,6 +23,7 @@ export function createApp() {
     });
 
     app.use("/api", seatsRouter);
+    app.use("/api", ordersRouter);
 
     app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
         console.error(err);

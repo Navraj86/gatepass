@@ -1,0 +1,80 @@
+{
+  "event": {
+    "business_id": "bus_0NqmjFtECEzMPPV6OIIoJ",
+    "data": {
+      "billing": {
+        "city": null,
+        "country": "IN",
+        "state": null,
+        "street": null,
+        "zipcode": "151001"
+      },
+      "brand_id": "bus_0NqmjFtECEzMPPV6OIIoJ",
+      "business_id": "bus_0NqmjFtECEzMPPV6OIIoJ",
+      "card_exp_month": "06",
+      "card_exp_year": "2032",
+      "card_holder_name": "Navraj",
+      "card_issuing_country": "IN",
+      "card_last_four": "1034",
+      "card_network": "mastercard",
+      "card_type": "debit",
+      "charge_type": null,
+      "checkout_session_id": "cks_0NrHDsgqF48B7un67KyuC",
+      "created_at": "2026-11-05T08:40:13.462700Z",
+      "currency": "INR",
+      "custom_field_responses": null,
+      "customer": {
+        "customer_id": "cus_0Nr8jWQBky0HvqcBzrDNV",
+        "email": "spike@example.com",
+        "metadata": {},
+        "name": "Spike Tester",
+        "phone_number": null
+      },
+      "digital_products_delivered": false,
+      "discount_id": null,
+      "discounts": null,
+      "disputes": [],
+      "error_code": null,
+      "error_message": null,
+      "includes_usage": false,
+      "invoice_id": "inv_0NrHDsiAZRN5VdiN3XeBd",
+      "invoice_url": "https://test.dodopayments.com/invoices/payments/pay_0NrHDsiAZRN5VdiIFpwNz",
+      "is_multi_subscription": false,
+      "is_update_payment_method": false,
+      "metadata": {
+        "order_id": "spike-1793868013365"
+      },
+      "payload_type": "Payment",
+      "payment_id": "pay_0NrHDsiAZRN5VdiIFpwNz",
+      "payment_link": "https://test.checkout.dodopayments.com/i3vepOHX",
+      "payment_method": "card",
+      "payment_method_id": "pm_G0YHOqAY81DhSXum4C32",
+      "payment_method_type": "debit",
+      "payment_provider": "dodo",
+      "product_cart": [
+        {
+          "product_id": "pdt_0Nr8iFo1deaAKgWBouyce",
+          "quantity": 1
+        }
+      ],
+      "refund_status": null,
+      "refunds": [],
+      "retry_attempt": 0,
+      "service_periods": [],
+      "settlement_amount": 3540,
+      "settlement_currency": "USD",
+      "settlement_tax": 540,
+      "status": "succeeded",
+      "subscription_id": null,
+      "subscription_ids": [],
+      "tax": 51019,
+      "three_ds_flow": null,
+      "three_ds_status": null,
+      "three_ds_version": null,
+      "total_amount": 347838,
+      "updated_at": null
+    },
+    "timestamp": "2026-11-05T08:40:51.879760Z",
+    "type": "payment.succeeded"
+  }
+}
