@@ -36,6 +36,11 @@ services:
       DATABASE_URL: postgres://gatepass:${POSTGRES_PASSWORD}@postgres:5432/gatepass
       PORT: "4000"
       NODE_ENV: production
+      DODO_PAYMENTS_API_KEY: ${DODO_PAYMENTS_API_KEY}
+      DODO_PAYMENTS_WEBHOOK_KEY: ${DODO_PAYMENTS_WEBHOOK_KEY}
+      DODO_PRODUCT_ID: ${DODO_PRODUCT_ID}
+      DODO_ENVIRONMENT: test_mode
+      APP_URL: https://gatepass.navraj.dev
     depends_on:
       migrate:
         condition: service_completed_successfully
