@@ -2,7 +2,7 @@ import { db, pool } from "../db/client.js";
 import { events, seats, sections } from "../db/schema.js";
 
 export async function resetDb() {
-    await pool.query("truncate seats, sections, events cascade");
+    await pool.query("truncate tickets, order_items, orders, seats, sections, events cascade");
 }
 
 export async function createEventWithSeats(seatCount: number, overrides: Partial<typeof events.$inferInsert> = {}) {

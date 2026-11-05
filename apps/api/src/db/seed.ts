@@ -2,7 +2,7 @@ import { db, pool } from "./client.js";
 import { events, sections, seats } from "./schema.js";
 
 async function main() {
-  await pool.query("truncate seats, sections, events cascade");
+  await pool.query("truncate tickets, order_items, orders, seats, sections, events cascade");
 
   const [event] = await db
     .insert(events)
