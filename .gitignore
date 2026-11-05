@@ -2,3 +2,4 @@ node_modules
 dist
 .env
 infra/certs/
+apps/api/spikes/dodo/out/
