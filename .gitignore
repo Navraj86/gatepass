@@ -8,3 +8,4 @@ next-env.d.ts
 infra/certs/
 load/users.json
 apps/api/spikes/
+.deployed-tag

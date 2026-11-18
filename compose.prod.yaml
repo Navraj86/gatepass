@@ -1,4 +1,40 @@
+# Production stack on one VPS: nginx -> web + api-1/api-2 -> postgres + redis, with Alloy
+# shipping metrics and logs to Grafana Cloud. Images come from GHCR; IMAGE_TAG picks the
+# commit to run (infra/deploy.sh sets it). Secrets live in .env next to this file.
 name: gatepass
+
+x-api: &api
+  image: ghcr.io/navraj86/gatepass-api:${IMAGE_TAG:-latest}
+  restart: unless-stopped
+  # The API drains in under 10 s on SIGTERM; give it room before SIGKILL.
+  stop_grace_period: 15s
+  environment: &api-env
+    NODE_ENV: production
+    PORT: "4000"
+    LOG_LEVEL: info
+    APP_URL: ${APP_URL:-https://gatepass.navraj.dev}
+    DATABASE_URL: postgres://gatepass:${POSTGRES_PASSWORD}@postgres:5432/gatepass
+    DB_POOL_MAX: ${DB_POOL_MAX:-20}
+    REDIS_URL: redis://redis:6379
+    BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+    DODO_PAYMENTS_API_KEY: ${DODO_PAYMENTS_API_KEY}
+    DODO_PAYMENTS_WEBHOOK_KEY: ${DODO_PAYMENTS_WEBHOOK_KEY}
+    DODO_PRODUCT_ID: ${DODO_PRODUCT_ID}
+    DODO_ENVIRONMENT: test_mode
+    RESEND_API_KEY: ${RESEND_API_KEY:-}
+    EMAIL_FROM: ${EMAIL_FROM:-Gatepass <tickets@gatepass.navraj.dev>}
+    LOAD_TEST: ${LOAD_TEST:-false}
+  healthcheck:
+    test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4000/api/health/ready"]
+    interval: 5s
+    timeout: 3s
+    retries: 3
+    start_period: 10s
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+    redis:
+      condition: service_healthy
 
 services:
   postgres:
@@ -8,6 +44,7 @@ services:
       POSTGRES_USER: gatepass
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: gatepass
+    command: ["postgres", "-c", "max_connections=100", "-c", "shared_buffers=512MB"]
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -16,10 +53,20 @@ services:
       timeout: 3s
       retries: 10
 
+  # Nothing in Redis must survive a restart: pub/sub and rate-limit counters only.
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "128mb"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # One-off: applies additive migrations, then exits before the API starts.
   migrate:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
+    image: ghcr.io/navraj86/gatepass-api:${IMAGE_TAG:-latest}
     command: ["node", "dist/db/migrate.js"]
     environment:
       DATABASE_URL: postgres://gatepass:${POSTGRES_PASSWORD}@postgres:5432/gatepass
@@ -27,35 +74,60 @@ services:
       postgres:
         condition: service_healthy
 
-  api:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
+  api-1:
+    <<: *api
+    environment:
+      <<: *api-env
+      INSTANCE_NAME: api-1
+
+  api-2:
+    <<: *api
+    environment:
+      <<: *api-env
+      INSTANCE_NAME: api-2
+
+  web:
+    image: ghcr.io/navraj86/gatepass-web:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgres://gatepass:${POSTGRES_PASSWORD}@postgres:5432/gatepass
-      PORT: "4000"
-      NODE_ENV: production
-      DODO_PAYMENTS_API_KEY: ${DODO_PAYMENTS_API_KEY}
-      DODO_PAYMENTS_WEBHOOK_KEY: ${DODO_PAYMENTS_WEBHOOK_KEY}
-      DODO_PRODUCT_ID: ${DODO_PRODUCT_ID}
-      DODO_ENVIRONMENT: test_mode
-      APP_URL: https://gatepass.navraj.dev
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
+      API_INTERNAL_URL: http://api-1:4000,http://api-2:4000
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/login"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   nginx:
-    image: nginx:stable-alpine
+    image: nginx:1.29-alpine
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./infra/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ./infra/certs:/etc/nginx/certs:ro
     depends_on:
-      - api
+      - api-1
+      - api-2
+      - web
+
+  alloy:
+    image: grafana/alloy:v1.10.0
+    restart: unless-stopped
+    command: ["run", "--server.http.listen-addr=127.0.0.1:12345", "--storage.path=/var/lib/alloy", "/etc/alloy/config.alloy"]
+    environment:
+      GRAFANA_PROM_URL: ${GRAFANA_PROM_URL:-}
+      GRAFANA_PROM_USER: ${GRAFANA_PROM_USER:-}
+      GRAFANA_LOKI_URL: ${GRAFANA_LOKI_URL:-}
+      GRAFANA_LOKI_USER: ${GRAFANA_LOKI_USER:-}
+      GRAFANA_CLOUD_TOKEN: ${GRAFANA_CLOUD_TOKEN:-}
+    volumes:
+      - ./infra/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/log/gatepass:/var/log/gatepass:ro
+      - alloy-data:/var/lib/alloy
 
 volumes:
   pgdata:
+  alloy-data:
