@@ -26,7 +26,7 @@ export const httpLogger = pinoHttp({
     return { userId: locals?.userId };
   },
   serializers: {
-    req: (req) => ({ method: req.method, url: req.url }),
+    req: (req) => ({ id: req.id, method: req.method, url: req.url }),
     res: (res) => ({ statusCode: res.statusCode }),
   },
   autoLogging: { ignore: (req) => req.url === "/metrics" || req.url?.startsWith("/api/health") === true },
