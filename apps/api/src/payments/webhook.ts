@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { pool } from "../db/client.js";
 import { isUniqueViolation } from "../db/errors.js";
+import { announceSeats } from "../live/announce.js";
 import { releaseOrderHolds } from "../orders/checkout.js";
 import { requestRefund } from "../orders/refund.js";
 import { logger } from "../observability/logger.js";
@@ -175,6 +176,7 @@ async function fulfillInTransaction(
 
     await client.query("commit");
     checkoutPayments.inc({ result: "paid" });
+    await announceSeats(order.event_id, seatIds);
     return { outcome: "fulfilled" };
   } catch (err) {
     await client.query("rollback");
@@ -200,10 +202,10 @@ async function cancelByPayment(paymentId: string): Promise<WebhookOutcome> {
   const client = await pool.connect();
   try {
     await client.query("begin");
-    const cancelled = await client.query<{ id: string; user_id: string }>(
+    const cancelled = await client.query<{ id: string; user_id: string; event_id: string }>(
       `update orders set status = 'cancelled', updated_at = now()
        where dodo_payment_id = $1 and status in ('pending', 'failed')
-       returning id, user_id`,
+       returning id, user_id, event_id`,
       [paymentId],
     );
     const order = cancelled.rows[0];
@@ -211,9 +213,10 @@ async function cancelByPayment(paymentId: string): Promise<WebhookOutcome> {
       await client.query("rollback");
       return "ignored";
     }
-    await releaseOrderHolds(client, order.id, order.user_id);
+    const released = await releaseOrderHolds(client, order.id, order.user_id);
     await client.query("commit");
     checkoutPayments.inc({ result: "cancelled" });
+    await announceSeats(order.event_id, released);
     return "cancelled";
   } catch (err) {
     await client.query("rollback");

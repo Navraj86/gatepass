@@ -1,4 +1,5 @@
 import { pool } from "../db/client.js";
+import { announceSeats } from "../live/announce.js";
 
 export const HOLD_MINUTES = 10;
 export const MAX_SEATS_PER_USER = 6;
@@ -80,6 +81,7 @@ export async function holdSeats({ userId, eventId, seatIds }: HoldInput): Promis
     }
 
     await client.query("commit");
+    await announceSeats(eventId, ids);
     return { ok: true, seatIds: rows.map((r) => r.id), heldUntil: rows[0].held_until };
   } catch (err) {
     await client.query("rollback");
@@ -106,7 +108,9 @@ export async function releaseHolds({
      returning id`,
     [eventId, userId],
   );
-  return rows.map((r) => r.id);
+  const released = rows.map((r) => r.id);
+  await announceSeats(eventId, released);
+  return released;
 }
 
 function isLockTimeout(err: unknown): boolean {

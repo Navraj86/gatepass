@@ -1,5 +1,6 @@
 import type { PoolClient } from "pg";
 import { pool } from "../db/client.js";
+import { announceSeats } from "../live/announce.js";
 import { checkoutSessions } from "../observability/metrics.js";
 import { logger } from "../observability/logger.js";
 import { isUniqueViolation } from "../db/errors.js";
@@ -22,7 +23,7 @@ export type CheckoutResult =
   | { ok: false; reason: CheckoutFailure };
 
 type Prepared =
-  | { kind: "created"; orderId: string; amountMinor: number }
+  | { kind: "created"; orderId: string; amountMinor: number; seatIds: string[] }
   | { kind: "done"; result: CheckoutResult };
 
 export async function startCheckout(input: CheckoutInput): Promise<CheckoutResult> {
@@ -32,6 +33,8 @@ export async function startCheckout(input: CheckoutInput): Promise<CheckoutResul
     return prepared.result;
   }
   const { orderId, amountMinor } = prepared;
+  // The holds now last until the checkout expires plus grace; tell the seat map.
+  await announceSeats(input.eventId, prepared.seatIds);
 
   try {
     const session = await paymentGateway().createCheckout({
@@ -124,7 +127,7 @@ async function prepareOrder({ userId, eventId }: CheckoutInput): Promise<Prepare
     );
 
     await client.query("commit");
-    return { kind: "created", orderId, amountMinor };
+    return { kind: "created", orderId, amountMinor, seatIds };
   } catch (err) {
     await client.query("rollback");
     if (isUniqueViolation(err, "orders_one_pending_per_user_event")) {
@@ -152,10 +155,10 @@ export async function cancelCheckout({ userId, orderId }: { userId: string; orde
   const client = await pool.connect();
   try {
     await client.query("begin");
-    const cancelled = await client.query(
+    const cancelled = await client.query<{ event_id: string }>(
       `update orders set status = 'cancelled', updated_at = now()
        where id = $1 and user_id = $2 and status = 'pending'
-       returning id`,
+       returning event_id`,
       [orderId, userId],
     );
     if (cancelled.rowCount === 0) {
@@ -164,6 +167,7 @@ export async function cancelCheckout({ userId, orderId }: { userId: string; orde
     }
     const released = await releaseOrderHolds(client, orderId, userId);
     await client.query("commit");
+    await announceSeats(cancelled.rows[0].event_id, released);
     return { ok: true as const, released };
   } catch (err) {
     await client.query("rollback");

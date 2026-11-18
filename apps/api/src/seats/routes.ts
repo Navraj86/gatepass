@@ -3,8 +3,10 @@ import { z } from "zod";
 import { requireUser } from "../auth/dev-user.js";
 import { pool } from "../db/client.js";
 import { holdSeats, MAX_SEATS_PER_USER, releaseHolds, type HoldFailure } from "../holds/holds.js";
-import { parse, sendProblem } from "../http/problem.js";
+import { HttpError, parse, sendProblem } from "../http/problem.js";
+import { streamSeats } from "../live/stream.js";
 import { seatHolds } from "../observability/metrics.js";
+import { readSeatMap } from "./seat-map.js";
 
 const eventParams = z.object({ eventId: z.uuid() });
 const holdBody = z.object({
@@ -25,25 +27,54 @@ const metricResult: Record<HoldFailure, string> = {
 
 export const seatsRouter = Router();
 
-seatsRouter.get("/events/:eventId/seats", async (req, res) => {
-  const { eventId } = parse(eventParams, req.params, "event id");
+const publicEventColumns = `
+  e.id, e.title, e.description, e.venue, e.starts_at as "startsAt",
+  e.sale_starts_at as "saleStartsAt", e.status, e.currency`;
+
+seatsRouter.get("/events", async (_req, res) => {
   const { rows } = await pool.query(
-    `select s.id, s.row_label as "rowLabel", s.seat_number as "seatNumber",
-            sec.id as "sectionId", sec.name as "sectionName", sec.price_minor as "priceMinor",
-            case
-              when s.status = 'sold' then 'sold'
-              when s.status = 'blocked' then 'blocked'
-              when s.held_until > now() then 'held'
-              else 'available'
-            end as state,
-            case when s.status = 'available' and s.held_until > now() then s.held_until end as "heldUntil"
-     from seats s
-     join sections sec on sec.id = s.section_id
-     where s.event_id = $1
-     order by sec.name, s.row_label, s.seat_number`,
+    `select ${publicEventColumns},
+            (select min(price_minor) from sections where event_id = e.id) as "fromPriceMinor"
+     from events e
+     where e.status = 'published' and e.starts_at > now() - interval '1 day'
+     order by e.starts_at`,
+  );
+  res.json({ events: rows });
+});
+
+async function requirePublicEvent(eventId: string) {
+  const { rows } = await pool.query(
+    `select ${publicEventColumns} from events e where e.id = $1 and e.status <> 'draft'`,
     [eventId],
   );
-  res.json({ seats: rows });
+  if (rows.length === 0) {
+    throw new HttpError(404, "not_found", "Event not found");
+  }
+  return rows[0];
+}
+
+seatsRouter.get("/events/:eventId", async (req, res) => {
+  const { eventId } = parse(eventParams, req.params, "event id");
+  const event = await requirePublicEvent(eventId);
+  const sections = await pool.query(
+    `select id, name, price_minor as "priceMinor"
+     from sections where event_id = $1
+     order by price_minor desc, name`,
+    [eventId],
+  );
+  res.json({ event, sections: sections.rows });
+});
+
+seatsRouter.get("/events/:eventId/seats", async (req, res) => {
+  const { eventId } = parse(eventParams, req.params, "event id");
+  await requirePublicEvent(eventId);
+  res.json({ seats: await readSeatMap(eventId) });
+});
+
+seatsRouter.get("/events/:eventId/seats/stream", async (req, res) => {
+  const { eventId } = parse(eventParams, req.params, "event id");
+  await requirePublicEvent(eventId);
+  await streamSeats(req, res, eventId);
 });
 
 seatsRouter.post("/events/:eventId/holds", requireUser, async (req, res) => {
@@ -60,6 +91,16 @@ seatsRouter.post("/events/:eventId/holds", requireUser, async (req, res) => {
 
   seatHolds.inc({ result: "success" });
   res.status(201).json({ seatIds: result.seatIds, heldUntil: result.heldUntil });
+});
+
+seatsRouter.get("/events/:eventId/holds", requireUser, async (req, res) => {
+  const { eventId } = parse(eventParams, req.params, "event id");
+  const { rows } = await pool.query(
+    `select id as "seatId", held_until as "heldUntil" from seats
+     where event_id = $1 and held_by = $2 and status = 'available' and held_until > now()`,
+    [eventId, res.locals.userId],
+  );
+  res.json({ holds: rows });
 });
 
 seatsRouter.delete("/events/:eventId/holds", requireUser, async (req, res) => {
