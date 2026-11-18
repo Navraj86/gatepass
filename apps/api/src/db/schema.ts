@@ -10,7 +10,7 @@ export const eventStatus = pgEnum("event_status", ["draft", "published", "cancel
 
 export const events = pgTable("events", {
     id: uuid("id").primaryKey().defaultRandom(),
-    organizerId: text("oganizer_id").notNull(),
+    organizerId: text("organizer_id").notNull(),
     title: text("title").notNull(),
     description: text("description"),
     venue: text("venue").notNull(),

@@ -1,4 +1,6 @@
 import { pool } from "../db/client.js";
+import { logger } from "../observability/logger.js";
+import { refundFailures } from "../observability/metrics.js";
 import { paymentGateway } from "../payments/gateway.js";
 
 export async function requestRefund(orderId: string, reason = "Seat no longer available") {
@@ -20,6 +22,7 @@ export async function requestRefund(orderId: string, reason = "Seat no longer av
       ]);
     }
   } catch (err) {
-    console.error("Refund request failed; order stays refunding", { orderId, err });
+    refundFailures.inc();
+    logger.error({ err, orderId }, "Refund request failed; order stays refunding");
   }
 }

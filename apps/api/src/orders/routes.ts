@@ -2,34 +2,29 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireUser } from "../auth/dev-user.js";
 import { pool } from "../db/client.js";
+import { HttpError, parse, sendProblem } from "../http/problem.js";
 import { cancelCheckout, startCheckout, type CheckoutFailure } from "./checkout.js";
 
 const checkoutBody = z.object({
   eventId: z.uuid(),
   email: z.email(),
-  name: z.string().min(1).max(100),
+  name: z.string().trim().min(1).max(100),
   country: z.string().regex(/^[A-Z]{2}$/),
-  zipcode: z.string().min(3).max(12),
+  zipcode: z.string().trim().min(3).max(12),
 });
 
 const orderParams = z.object({ orderId: z.uuid() });
 
-const failure: Record<CheckoutFailure, { status: number; message: string }> = {
-  no_holds: { status: 409, message: "Your seat hold has expired. Please select your seats again" },
-  in_progress: { status: 409, message: "Checkout is being prepared. Try again in a moment" },
-  payment_unavailable: { status: 502, message: "Payments are temporarily unavailable" },
+const failures: Record<CheckoutFailure, { status: number; detail: string }> = {
+  no_holds: { status: 409, detail: "Your seat hold has expired. Please select your seats again" },
+  in_progress: { status: 409, detail: "Checkout is being prepared. Try again in a moment" },
+  payment_unavailable: { status: 502, detail: "Payments are temporarily unavailable" },
 };
 
 export const ordersRouter = Router();
 
 ordersRouter.post("/orders", requireUser, async (req, res) => {
-  const body = checkoutBody.safeParse(req.body);
-  if (!body.success) {
-    res.status(400).json({ code: "invalid_request", message: "Invalid checkout details" });
-    return;
-  }
-
-  const { eventId, email, name, country, zipcode } = body.data;
+  const { eventId, email, name, country, zipcode } = parse(checkoutBody, req.body, "checkout details");
   const result = await startCheckout({
     userId: res.locals.userId,
     eventId,
@@ -38,58 +33,49 @@ ordersRouter.post("/orders", requireUser, async (req, res) => {
   });
 
   if (!result.ok) {
-    const { status, message } = failure[result.reason];
-    res.status(status).json({ code: result.reason, message });
+    const { status, detail } = failures[result.reason];
+    sendProblem(res, status, result.reason, detail);
     return;
   }
-
   res.status(result.reused ? 200 : 201).json({ orderId: result.orderId, checkoutUrl: result.checkoutUrl });
 });
 
 ordersRouter.get("/orders/:orderId", requireUser, async (req, res) => {
-  const params = orderParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ code: "invalid_request", message: "Invalid order id" });
-    return;
-  }
-
+  const { orderId } = parse(orderParams, req.params, "order id");
   const { rows } = await pool.query(
-    `select id, event_id as "eventId", status, amount_minor as "amountMinor", currency,
-            charged_amount_minor as "chargedAmountMinor", charged_currency as "chargedCurrency",
-            failure_code as "failureCode", expires_at as "expiresAt"
-     from orders where id = $1 and user_id = $2`,
-    [params.data.orderId, res.locals.userId],
+    `select o.id, o.event_id as "eventId", e.title as "eventTitle", e.venue, e.starts_at as "startsAt",
+            o.status, o.amount_minor as "amountMinor", o.currency,
+            o.charged_amount_minor as "chargedAmountMinor", o.charged_currency as "chargedCurrency",
+            o.failure_code as "failureCode", o.expires_at as "expiresAt", o.paid_at as "paidAt",
+            o.created_at as "createdAt"
+     from orders o
+     join events e on e.id = o.event_id
+     where o.id = $1 and o.user_id = $2`,
+    [orderId, res.locals.userId],
   );
   if (rows.length === 0) {
-    res.status(404).json({ code: "not_found", message: "Order not found" });
-    return;
+    throw new HttpError(404, "not_found", "Order not found");
   }
 
   const tickets = await pool.query(
-    `select t.code, t.status, sec.name as "sectionName", s.row_label as "rowLabel",
-            s.seat_number as "seatNumber"
+    `select t.id, t.code, t.status, t.scanned_at as "scannedAt", sec.name as "sectionName",
+            s.row_label as "rowLabel", s.seat_number as "seatNumber"
      from tickets t
      join seats s on s.id = t.seat_id
      join sections sec on sec.id = s.section_id
      where t.order_id = $1
      order by sec.name, s.row_label, s.seat_number`,
-    [params.data.orderId],
+    [orderId],
   );
 
   res.json({ order: rows[0], tickets: tickets.rows });
 });
 
 ordersRouter.post("/orders/:orderId/cancel", requireUser, async (req, res) => {
-  const params = orderParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ code: "invalid_request", message: "Invalid order id" });
-    return;
-  }
-
-  const result = await cancelCheckout({ userId: res.locals.userId, orderId: params.data.orderId });
+  const { orderId } = parse(orderParams, req.params, "order id");
+  const result = await cancelCheckout({ userId: res.locals.userId, orderId });
   if (!result.ok) {
-    res.status(409).json({ code: "not_pending", message: "This order can no longer be cancelled" });
-    return;
+    throw new HttpError(409, "not_pending", "This order can no longer be cancelled");
   }
   res.json({ released: result.released });
 });

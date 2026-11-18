@@ -1,17 +1,16 @@
 import DodoPayments from "dodopayments";
-import { requireEnv } from "../config.js";
+import { config } from "../config.js";
 import type { PaymentGateway } from "./gateway.js";
 
 type CheckoutParams = Parameters<DodoPayments["checkoutSessions"]["create"]>[0];
 type Country = NonNullable<CheckoutParams["billing_address"]>["country"];
 
 export function createDodoGateway(): PaymentGateway {
-  const client = new DodoPayments({
-    bearerToken: requireEnv("DODO_PAYMENTS_API_KEY"),
-    environment: process.env.DODO_ENVIRONMENT === "live_mode" ? "live_mode" : "test_mode",
-  });
-  const productId = requireEnv("DODO_PRODUCT_ID");
-  const appUrl = requireEnv("APP_URL");
+  const { DODO_PAYMENTS_API_KEY: apiKey, DODO_PRODUCT_ID: productId, APP_URL: appUrl } = config;
+  if (!apiKey || !productId) {
+    throw new Error("DODO_PAYMENTS_API_KEY and DODO_PRODUCT_ID must be set to take payments");
+  }
+  const client = new DodoPayments({ bearerToken: apiKey, environment: config.DODO_ENVIRONMENT });
 
   return {
     async createCheckout({ orderId, amountMinor, customer, billing }) {

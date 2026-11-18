@@ -1,5 +1,7 @@
 import type { PoolClient } from "pg";
 import { pool } from "../db/client.js";
+import { checkoutSessions } from "../observability/metrics.js";
+import { logger } from "../observability/logger.js";
 import { isUniqueViolation } from "../db/errors.js";
 import { paymentGateway } from "../payments/gateway.js";
 
@@ -26,6 +28,7 @@ type Prepared =
 export async function startCheckout(input: CheckoutInput): Promise<CheckoutResult> {
   const prepared = await prepareOrder(input);
   if (prepared.kind === "done") {
+    if (prepared.result.ok) checkoutSessions.inc({ result: "reused" });
     return prepared.result;
   }
   const { orderId, amountMinor } = prepared;
@@ -43,9 +46,11 @@ export async function startCheckout(input: CheckoutInput): Promise<CheckoutResul
        where id = $1`,
       [orderId, session.sessionId, session.paymentId, session.checkoutUrl],
     );
+    checkoutSessions.inc({ result: "created" });
     return { ok: true, orderId, checkoutUrl: session.checkoutUrl, reused: false };
   } catch (err) {
-    console.error("Checkout session creation failed", { orderId, err });
+    checkoutSessions.inc({ result: "failed" });
+    logger.error({ err, orderId }, "Checkout session creation failed");
     await pool.query(
       `update orders set status = 'failed', failure_code = 'GATEWAY_ERROR', updated_at = now()
        where id = $1 and status = 'pending'`,

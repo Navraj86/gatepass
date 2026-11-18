@@ -1,6 +1,9 @@
 import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { db, pool } from "./client.js";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 
-await migrate(db, { migrationsFolder: "./drizzle" });
+// Runs as a one-off container before the API starts, so it only needs DATABASE_URL.
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+await migrate(drizzle(pool), { migrationsFolder: "./drizzle" });
 await pool.end();
 console.log("Migrations applied");

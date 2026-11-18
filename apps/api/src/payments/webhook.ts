@@ -4,6 +4,8 @@ import { pool } from "../db/client.js";
 import { isUniqueViolation } from "../db/errors.js";
 import { releaseOrderHolds } from "../orders/checkout.js";
 import { requestRefund } from "../orders/refund.js";
+import { logger } from "../observability/logger.js";
+import { checkoutPayments, oversellsBlocked, refundFailures } from "../observability/metrics.js";
 
 const paymentSucceededData = z.object({
   payment_id: z.string(),
@@ -58,6 +60,7 @@ export async function processWebhook(event: WebhookEvent): Promise<WebhookOutcom
          where dodo_payment_id = $1 and status = 'pending'`,
         [event.data.payment_id, event.data.error_code ?? "UNKNOWN"],
       );
+      if (result.rowCount) checkoutPayments.inc({ result: "failed" });
       return result.rowCount ? "failed" : "ignored";
     }
 
@@ -70,11 +73,13 @@ export async function processWebhook(event: WebhookEvent): Promise<WebhookOutcom
          where dodo_payment_id = $1 and status = 'refunding'`,
         [event.data.payment_id],
       );
+      if (result.rowCount) checkoutPayments.inc({ result: "refunded" });
       return result.rowCount ? "refunded" : "ignored";
     }
 
     case "refund.failed":
-      console.error("Refund failed at the provider", event.data);
+      refundFailures.inc();
+      logger.error({ paymentId: event.data.payment_id }, "Refund failed at the provider; order stays refunding");
       return "ignored";
   }
 }
@@ -110,7 +115,7 @@ async function fulfillInTransaction(
     const order = found.rows[0];
     if (!order) {
       await client.query("rollback");
-      console.warn("payment.succeeded for an unknown payment", data.payment_id);
+      logger.warn({ paymentId: data.payment_id }, "payment.succeeded for an unknown payment");
       return { outcome: "ignored" };
     }
     orderId = order.id;
@@ -127,7 +132,7 @@ async function fulfillInTransaction(
       netAmount !== order.amount_minor
     ) {
       await client.query("rollback");
-      console.error("payment.succeeded does not match its order", { orderId: order.id });
+      logger.error({ orderId: order.id }, "payment.succeeded does not match its order");
       return { outcome: "ignored" };
     }
 
@@ -154,7 +159,9 @@ async function fulfillInTransaction(
       await client.query("rollback to savepoint claim_seats");
       await client.query(`update orders set status = 'refunding', updated_at = now() where id = $1`, [order.id]);
       await client.query("commit");
-      console.error("A seat was lost before payment arrived; refunding", { orderId: order.id });
+      oversellsBlocked.inc({ where: "fulfillment" });
+      checkoutPayments.inc({ result: "seat_lost" });
+      logger.error({ orderId: order.id }, "A seat was lost before payment arrived; refunding");
       return { outcome: "refunding", refundOrderId: order.id };
     }
 
@@ -167,11 +174,13 @@ async function fulfillInTransaction(
     );
 
     await client.query("commit");
+    checkoutPayments.inc({ result: "paid" });
     return { outcome: "fulfilled" };
   } catch (err) {
     await client.query("rollback");
     if (orderId && isUniqueViolation(err, "tickets_one_valid_per_seat")) {
-      console.error("Oversell blocked by tickets_one_valid_per_seat", { orderId });
+      oversellsBlocked.inc({ where: "ticket_index" });
+      logger.error({ orderId }, "Oversell blocked by tickets_one_valid_per_seat");
       await pool.query(
         `update orders
          set status = 'refunding', paid_at = now(), charged_amount_minor = $2,
@@ -204,6 +213,7 @@ async function cancelByPayment(paymentId: string): Promise<WebhookOutcome> {
     }
     await releaseOrderHolds(client, order.id, order.user_id);
     await client.query("commit");
+    checkoutPayments.inc({ result: "cancelled" });
     return "cancelled";
   } catch (err) {
     await client.query("rollback");
