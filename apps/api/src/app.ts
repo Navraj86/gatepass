@@ -1,6 +1,7 @@
 import express from "express";
 import helmet from "helmet";
 import { pool } from "./db/client.js";
+import { seatBus } from "./live/seat-bus.js";
 import { errorHandler, notFound } from "./http/problem.js";
 import { httpLogger } from "./observability/logger.js";
 import { measureRequests, registry } from "./observability/metrics.js";
@@ -27,12 +28,13 @@ export function createApp() {
   });
 
   app.get("/api/health/ready", async (_req, res) => {
-    try {
-      await pool.query("select 1");
-      res.json({ status: "ok", db: "up" });
-    } catch {
-      res.status(503).json({ status: "error", db: "down" });
-    }
+    const db = await pool.query("select 1").then(
+      () => "up",
+      () => "down",
+    );
+    const bus = (await seatBus().ready()) ? "up" : "down";
+    const ok = db === "up" && bus === "up";
+    res.status(ok ? 200 : 503).json({ status: ok ? "ok" : "error", db, bus });
   });
 
   app.use("/api", webhookRouter);

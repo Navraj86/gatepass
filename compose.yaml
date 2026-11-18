@@ -1,3 +1,6 @@
+# Local development: PostgreSQL and Redis. Run the API and web app with pnpm.
+name: gatepass
+
 services:
   postgres:
     image: postgres:17-alpine
@@ -6,41 +9,26 @@ services:
       POSTGRES_PASSWORD: gatepass
       POSTGRES_DB: gatepass
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U gatepass -d gatepass"]
       interval: 5s
       timeout: 3s
       retries: 10
-  
-  migrate:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
-    command: ["node", "dist/db/migrate.js"]
-    environment:
-      DATABASE_URL: postgres://gatepass:gatepass@postgres:5432/gatepass
-    depends_on:
-      postgres:
-        condition: service_healthy
 
-  api:
-    env_file:
-      - apps/api/.env
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
-    environment:
-      DATABASE_URL: postgres://gatepass:gatepass@postgres:5432/gatepass
-      PORT: "4000"
-      DEV_AUTH: "true"
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
     ports:
-      - "4001:4000"
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
 volumes:
   pgdata:

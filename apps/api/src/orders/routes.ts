@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireUser } from "../auth/dev-user.js";
 import { pool } from "../db/client.js";
 import { HttpError, parse, sendProblem } from "../http/problem.js";
+import { byUser, rateLimit } from "../http/rate-limit.js";
 import { cancelCheckout, startCheckout, type CheckoutFailure } from "./checkout.js";
 
 const checkoutBody = z.object({
@@ -21,9 +22,11 @@ const failures: Record<CheckoutFailure, { status: number; detail: string }> = {
   payment_unavailable: { status: 502, detail: "Payments are temporarily unavailable" },
 };
 
+const orderLimit = rateLimit("orders", 5, 60, byUser);
+
 export const ordersRouter = Router();
 
-ordersRouter.post("/orders", requireUser, async (req, res) => {
+ordersRouter.post("/orders", requireUser, orderLimit, async (req, res) => {
   const { eventId, email, name, country, zipcode } = parse(checkoutBody, req.body, "checkout details");
   const result = await startCheckout({
     userId: res.locals.userId,

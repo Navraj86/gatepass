@@ -4,6 +4,7 @@ import { requireUser } from "../auth/dev-user.js";
 import { pool } from "../db/client.js";
 import { holdSeats, MAX_SEATS_PER_USER, releaseHolds, type HoldFailure } from "../holds/holds.js";
 import { HttpError, parse, sendProblem } from "../http/problem.js";
+import { byUser, rateLimit } from "../http/rate-limit.js";
 import { streamSeats } from "../live/stream.js";
 import { seatHolds } from "../observability/metrics.js";
 import { readSeatMap } from "./seat-map.js";
@@ -24,6 +25,8 @@ const metricResult: Record<HoldFailure, string> = {
   not_on_sale: "not_on_sale",
   limit_exceeded: "limit",
 };
+
+const holdLimit = rateLimit("holds", 10, 60, byUser);
 
 export const seatsRouter = Router();
 
@@ -77,7 +80,7 @@ seatsRouter.get("/events/:eventId/seats/stream", async (req, res) => {
   await streamSeats(req, res, eventId);
 });
 
-seatsRouter.post("/events/:eventId/holds", requireUser, async (req, res) => {
+seatsRouter.post("/events/:eventId/holds", requireUser, holdLimit, async (req, res) => {
   const { eventId } = parse(eventParams, req.params, "event id");
   const { seatIds } = parse(holdBody, req.body, "seat list");
 
