@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
 import { auth } from "../auth/auth.js";
 import { config } from "../config.js";
-import { seatGrid } from "../events/seat-grid.js";
 import { db, pool } from "./client.js";
-import { eventStaff, events, seats, sections, type UserRole, user } from "./schema.js";
+import { eventStaff, events, type UserRole, user } from "./schema.js";
+import { createSeatedEvent } from "./seed-event.js";
 
 /**
  * Creates the demo accounts and the demo event. Safe to rerun: existing
@@ -17,12 +17,6 @@ const accounts: { email: string; name: string; role: UserRole }[] = [
   { email: "organizer@gatepass.test", name: "Demo Organizer", role: "organizer" },
   { email: "staff@gatepass.test", name: "Demo Staff", role: "staff" },
   { email: "attendee@gatepass.test", name: "Demo Attendee", role: "attendee" },
-];
-
-const layout = [
-  { name: "Front", priceMinor: 12000, rows: 8, seatsPerRow: 25 },
-  { name: "Middle", priceMinor: 7000, rows: 16, seatsPerRow: 50 },
-  { name: "Back", priceMinor: 4000, rows: 20, seatsPerRow: 50 },
 ];
 
 async function ensureAccount(email: string, name: string, role: UserRole) {
@@ -61,36 +55,15 @@ async function main() {
     return;
   }
 
-  const [event] = await db
-    .insert(events)
-    .values({
-      organizerId: ids.organizer,
-      title,
-      description: "An evening of live indie music. 2,000 reserved seats go on sale at once.",
-      venue: "Riverside Arena",
-      startsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      saleStartsAt: new Date(Date.now() - 60 * 1000),
-      status: "published",
-    })
-    .returning();
-
-  let firstRow = 0;
-  for (const s of layout) {
-    const [section] = await db
-      .insert(sections)
-      .values({ eventId: event.id, name: s.name, priceMinor: s.priceMinor })
-      .returning();
-    await db
-      .insert(seats)
-      .values(
-        seatGrid(s.rows, s.seatsPerRow, firstRow).map((g) => ({ ...g, eventId: event.id, sectionId: section.id })),
-      );
-    firstRow += s.rows;
-  }
+  const { event, seatCount } = await createSeatedEvent({
+    organizerId: ids.organizer,
+    title,
+    description: "An evening of live indie music. 2,000 reserved seats go on sale at once.",
+    venue: "Riverside Arena",
+  });
   await db.insert(eventStaff).values({ eventId: event.id, userId: ids.staff });
 
-  const total = layout.reduce((n, s) => n + s.rows * s.seatsPerRow, 0);
-  console.log(`Seeded "${title}" (${event.id}) with ${total} seats`);
+  console.log(`Seeded "${title}" (${event.id}) with ${seatCount} seats`);
 }
 
 main()

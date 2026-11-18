@@ -6,6 +6,6 @@ dist
 *.tsbuildinfo
 next-env.d.ts
 infra/certs/
-load/users.json
+load/run.json
 apps/api/spikes/
 .deployed-tag
