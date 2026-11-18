@@ -12,6 +12,7 @@ import { currentUser, requireEventOwner, requireRole } from "../auth/middleware.
 import { pool } from "../db/client.js";
 import { seatGrid } from "../events/seat-grid.js";
 import { HttpError, parse } from "../http/problem.js";
+import { refundByOrganizer } from "../orders/refund.js";
 
 export const organizerRouter = Router();
 organizerRouter.use("/organizer", requireRole("organizer"));
@@ -203,6 +204,23 @@ organizerRouter.get("/organizer/events/:eventId/stats", requireEventOwner, async
     [eventId],
   );
   res.json({ stats: rows[0] });
+});
+
+const refundFailures = {
+  not_found: { status: 404, detail: "Order not found" },
+  not_refundable: { status: 409, detail: "Only paid orders can be refunded" },
+  ticket_scanned: { status: 409, detail: "A ticket in this order was already scanned" },
+} as const;
+
+organizerRouter.post("/organizer/orders/:orderId/refund", async (req, res) => {
+  const { orderId } = parse(z.object({ orderId: z.uuid() }), req.params, "order id");
+  const result = await refundByOrganizer({ orderId, organizerId: currentUser(res).id });
+  if (!result.ok) {
+    const { status, detail } = refundFailures[result.reason];
+    throw new HttpError(status, result.reason, detail);
+  }
+  const { rows } = await pool.query(`select id, status from orders where id = $1`, [orderId]);
+  res.json({ order: rows[0] });
 });
 
 const ordersQuery = z.object({

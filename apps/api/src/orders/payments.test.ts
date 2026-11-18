@@ -9,8 +9,15 @@ import { setPaymentGateway } from "../payments/gateway.js";
 import { processWebhook } from "../payments/webhook.js";
 import { createFakeGateway } from "../test/fake-gateway.js";
 import { createEventWithSeats, createUsers, resetDb, warmPool } from "../test/factories.js";
-import { paymentFailed, paymentSucceeded, paymentSucceededJson, signedHeaders } from "../test/webhooks.js";
+import {
+  paymentFailed,
+  paymentSucceeded,
+  paymentSucceededJson,
+  refundSucceeded,
+  signedHeaders,
+} from "../test/webhooks.js";
 import { cancelCheckout, startCheckout } from "./checkout.js";
+import { refundByOrganizer } from "./refund.js";
 
 const customer = { email: "buyer@example.com", name: "Test Buyer" };
 const billing = { country: "IN", zipcode: "151001" };
@@ -183,5 +190,60 @@ describe("payment webhooks", () => {
 
     const [paid] = await db.select().from(orders).where(eq(orders.id, order.id));
     expect(paid.status).toBe("paid");
+  });
+});
+describe("organizer refunds", () => {
+  async function paidOrder(userId: string, eventId: string, seatIds: string[]) {
+    const order = await holdAndCheckout(userId, eventId, seatIds);
+    expect(await processWebhook(paymentSucceeded(order.dodoPaymentId!, order.id, order.amountMinor))).toBe("fulfilled");
+    return order;
+  }
+
+  it("C8: a refunded seat can be sold again", async () => {
+    const { event, seats: [seat] } = await createEventWithSeats(1);
+    const first = await paidOrder("user-1", event.id, [seat.id]);
+
+    const refund = await refundByOrganizer({ orderId: first.id, organizerId: "organizer-1" });
+    expect(refund).toEqual({ ok: true });
+    expect(fake.refunds).toHaveLength(1);
+
+    const [refunding] = await db.select().from(orders).where(eq(orders.id, first.id));
+    expect(refunding.status).toBe("refunding");
+    const [freed] = await db.select().from(seats).where(eq(seats.id, seat.id));
+    expect(freed.status).toBe("available");
+
+    const second = await paidOrder("user-2", event.id, [seat.id]);
+    const all = await db.select().from(tickets).where(eq(tickets.seatId, seat.id));
+    expect(all.map((t) => [t.orderId, t.status]).sort()).toEqual(
+      [
+        [first.id, "refunded"],
+        [second.id, "valid"],
+      ].sort(),
+    );
+
+    await processWebhook(refundSucceeded(first.dodoPaymentId!));
+    const [done] = await db.select().from(orders).where(eq(orders.id, first.id));
+    expect(done.status).toBe("refunded");
+  });
+
+  it("is retry-safe and refuses scanned or foreign orders", async () => {
+    const { event, seats: [s1, s2] } = await createEventWithSeats(2);
+    const order = await paidOrder("user-1", event.id, [s1.id]);
+
+    expect(await refundByOrganizer({ orderId: order.id, organizerId: "someone-else" })).toEqual({
+      ok: false,
+      reason: "not_found",
+    });
+
+    expect(await refundByOrganizer({ orderId: order.id, organizerId: "organizer-1" })).toEqual({ ok: true });
+    expect(await refundByOrganizer({ orderId: order.id, organizerId: "organizer-1" })).toEqual({ ok: true });
+    expect(fake.refunds).toHaveLength(2);
+
+    const scannedOrder = await paidOrder("user-2", event.id, [s2.id]);
+    await db.update(tickets).set({ scannedAt: new Date(), scannedBy: "organizer-1" }).where(eq(tickets.orderId, scannedOrder.id));
+    expect(await refundByOrganizer({ orderId: scannedOrder.id, organizerId: "organizer-1" })).toEqual({
+      ok: false,
+      reason: "ticket_scanned",
+    });
   });
 });

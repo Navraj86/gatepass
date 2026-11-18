@@ -32,6 +32,10 @@ export function paymentFailed(paymentId: string, errorCode: string) {
   return webhookEvent.parse({ type: "payment.failed", data: { payment_id: paymentId, error_code: errorCode } });
 }
 
+export function refundSucceeded(paymentId: string) {
+  return webhookEvent.parse({ type: "refund.succeeded", data: { refund_id: "ref_test", payment_id: paymentId } });
+}
+
 export function signedHeaders(body: string) {
   const webhook = new Webhook(process.env.DODO_PAYMENTS_WEBHOOK_KEY!);
   const id = `msg_test_${randomUUID()}`;
