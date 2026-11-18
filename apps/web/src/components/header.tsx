@@ -22,7 +22,7 @@ export function Header() {
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4">
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <span aria-hidden className="grid size-7 place-items-center rounded-lg bg-accent text-accent-ink">
-            <svg viewBox="0 0 20 20" className="size-4" fill="currentColor">
+            <svg viewBox="0 0 20 20" className="size-4" fill="currentColor" aria-hidden="true">
               <path d="M3 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V5Z" />
             </svg>
           </span>
