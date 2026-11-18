@@ -10,10 +10,12 @@ import { byIp, rateLimit } from "./http/rate-limit.js";
 import { seatBus } from "./live/seat-bus.js";
 import { httpLogger } from "./observability/logger.js";
 import { measureRequests, registry } from "./observability/metrics.js";
+import { meRouter } from "./orders/me-routes.js";
 import { ordersRouter } from "./orders/routes.js";
 import { organizerRouter } from "./organizer/routes.js";
 import { webhookRouter } from "./payments/routes.js";
 import { seatsRouter } from "./seats/routes.js";
+import { staffRouter } from "./staff/routes.js";
 
 export function createApp() {
   const app = express();
@@ -60,6 +62,8 @@ export function createApp() {
   app.use("/api", seatsRouter);
   app.use("/api", ordersRouter);
   app.use("/api", organizerRouter);
+  app.use("/api", staffRouter);
+  app.use("/api", meRouter);
 
   app.use(notFound);
   app.use(errorHandler);

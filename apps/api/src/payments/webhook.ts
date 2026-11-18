@@ -1,10 +1,10 @@
-import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { pool } from "../db/client.js";
 import { isUniqueViolation } from "../db/errors.js";
 import { announceSeats } from "../live/announce.js";
 import { releaseOrderHolds } from "../orders/checkout.js";
 import { requestRefund } from "../orders/refund.js";
+import { newTicketCode } from "../tickets/code.js";
 import { logger } from "../observability/logger.js";
 import { checkoutPayments, oversellsBlocked, refundFailures } from "../observability/metrics.js";
 
@@ -167,7 +167,7 @@ async function fulfillInTransaction(
     }
 
     const seatIds = claimed.rows.map((r) => r.id);
-    const codes = seatIds.map(() => randomBytes(16).toString("base64url"));
+    const codes = seatIds.map(() => newTicketCode());
     await client.query(
       `insert into tickets (order_id, event_id, seat_id, code)
        select $1, $2, unnest($3::uuid[]), unnest($4::text[])`,
