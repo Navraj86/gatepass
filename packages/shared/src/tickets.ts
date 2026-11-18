@@ -23,11 +23,7 @@ export function encodeTicketCode(bytes: Uint8Array): string {
 
 /** Accepts what a person types: any case, spaces or dashes, O for 0, I and L for 1. */
 export function normalizeTicketCode(input: string): string {
-  return input
-    .toUpperCase()
-    .replace(/[\s-]/g, "")
-    .replace(/O/g, "0")
-    .replace(/[IL]/g, "1");
+  return input.toUpperCase().replace(/[\s-]/g, "").replace(/O/g, "0").replace(/[IL]/g, "1");
 }
 
 /** Groups a code for display: XXXXX-XXXXX-... */

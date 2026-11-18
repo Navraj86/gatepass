@@ -3,11 +3,11 @@ import { pool } from "../db/client.js";
 import { isUniqueViolation } from "../db/errors.js";
 import { sendSeatLostEmail, sendTicketEmail } from "../email/tickets.js";
 import { announceSeats } from "../live/announce.js";
+import { logger } from "../observability/logger.js";
+import { checkoutPayments, oversellsBlocked, refundFailures } from "../observability/metrics.js";
 import { releaseOrderHolds } from "../orders/checkout.js";
 import { requestRefund } from "../orders/refund.js";
 import { newTicketCode } from "../tickets/code.js";
-import { logger } from "../observability/logger.js";
-import { checkoutPayments, oversellsBlocked, refundFailures } from "../observability/metrics.js";
 
 const paymentSucceededData = z.object({
   payment_id: z.string(),
@@ -40,14 +40,7 @@ export const webhookEvent = z.discriminatedUnion("type", [
 export type WebhookEvent = z.infer<typeof webhookEvent>;
 type PaymentSucceededData = z.infer<typeof paymentSucceededData>;
 
-export type WebhookOutcome =
-  | "fulfilled"
-  | "duplicate"
-  | "refunding"
-  | "failed"
-  | "cancelled"
-  | "refunded"
-  | "ignored";
+export type WebhookOutcome = "fulfilled" | "duplicate" | "refunding" | "failed" | "cancelled" | "refunded" | "ignored";
 
 const CLAIMABLE = ["pending", "expired", "cancelled", "failed"];
 

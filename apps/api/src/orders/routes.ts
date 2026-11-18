@@ -3,10 +3,10 @@ import { Router } from "express";
 import { z } from "zod";
 import { currentUser, requireUser } from "../auth/middleware.js";
 import { pool } from "../db/client.js";
+import { sendTicketEmail } from "../email/tickets.js";
 import { HttpError, parse, sendProblem } from "../http/problem.js";
 import { byUser, rateLimit } from "../http/rate-limit.js";
-import { sendTicketEmail } from "../email/tickets.js";
-import { cancelCheckout, startCheckout, type CheckoutFailure } from "./checkout.js";
+import { type CheckoutFailure, cancelCheckout, startCheckout } from "./checkout.js";
 
 const orderParams = z.object({ orderId: z.uuid() });
 

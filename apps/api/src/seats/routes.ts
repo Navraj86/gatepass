@@ -3,7 +3,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { currentUser, requireUser } from "../auth/middleware.js";
 import { pool } from "../db/client.js";
-import { holdSeats, MAX_SEATS_PER_USER, releaseHolds, type HoldFailure } from "../holds/holds.js";
+import { type HoldFailure, holdSeats, MAX_SEATS_PER_USER, releaseHolds } from "../holds/holds.js";
 import { HttpError, parse, sendProblem } from "../http/problem.js";
 import { byUser, rateLimit } from "../http/rate-limit.js";
 import { streamSeats } from "../live/stream.js";

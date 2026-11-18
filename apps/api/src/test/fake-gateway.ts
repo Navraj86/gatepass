@@ -20,5 +20,12 @@ export function createFakeGateway() {
     },
   };
 
-  return { gateway, sessions, refunds, setFailing: (value: boolean) => { failing = value; } };
+  return {
+    gateway,
+    sessions,
+    refunds,
+    setFailing: (value: boolean) => {
+      failing = value;
+    },
+  };
 }

@@ -1,5 +1,5 @@
 import { db, pool } from "../db/client.js";
-import { events, seats, sections, user, type UserRole } from "../db/schema.js";
+import { events, seats, sections, type UserRole, user } from "../db/schema.js";
 
 export async function resetDb() {
   await pool.query(
@@ -17,10 +17,7 @@ export async function createUsers(ids: string[], role: UserRole = "attendee") {
     .onConflictDoNothing();
 }
 
-export async function createEventWithSeats(
-  seatCount: number,
-  overrides: Partial<typeof events.$inferInsert> = {},
-) {
+export async function createEventWithSeats(seatCount: number, overrides: Partial<typeof events.$inferInsert> = {}) {
   const organizerId = overrides.organizerId ?? "organizer-1";
   await createUsers([organizerId], "organizer");
 

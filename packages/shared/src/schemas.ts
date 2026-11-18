@@ -28,12 +28,10 @@ const eventFields = {
   saleStartsAt: futureDate,
 };
 
-export const createEventSchema = z
-  .object(eventFields)
-  .refine((e) => e.saleStartsAt < e.startsAt, {
-    path: ["saleStartsAt"],
-    message: "Sales must open before the event starts",
-  });
+export const createEventSchema = z.object(eventFields).refine((e) => e.saleStartsAt < e.startsAt, {
+  path: ["saleStartsAt"],
+  message: "Sales must open before the event starts",
+});
 export type CreateEventInput = z.infer<typeof createEventSchema>;
 
 export const updateEventSchema = z.object(eventFields).partial();

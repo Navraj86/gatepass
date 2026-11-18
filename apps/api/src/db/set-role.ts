@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db, pool } from "./client.js";
-import { user, userRoles, type UserRole } from "./schema.js";
+import { type UserRole, user, userRoles } from "./schema.js";
 
 // Usage: pnpm user:role <email> <attendee|organizer|staff>
 const [email, role] = process.argv.slice(2);

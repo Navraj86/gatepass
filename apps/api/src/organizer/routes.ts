@@ -142,7 +142,9 @@ organizerRouter.post("/organizer/events/:eventId/sections", requireEventOwner, a
       [eventId, sectionId, grid.map((g) => g.rowLabel), grid.map((g) => g.seatNumber)],
     );
     await client.query("commit");
-    res.status(201).json({ section: { id: sectionId, name: input.name, priceMinor: input.priceMinor, seatCount: added } });
+    res
+      .status(201)
+      .json({ section: { id: sectionId, name: input.name, priceMinor: input.priceMinor, seatCount: added } });
   } catch (err) {
     await client.query("rollback");
     if (typeof err === "object" && err && "constraint" in err && err.constraint === "sections_event_name_unique") {
@@ -272,7 +274,7 @@ organizerRouter.post("/organizer/events/:eventId/staff", requireEventOwner, asyn
     [email.toLowerCase()],
   );
   const staff = found.rows[0];
-  if (!staff || staff.role !== "staff") {
+  if (staff?.role !== "staff") {
     throw new HttpError(422, "not_staff", "No staff account with this email");
   }
   await pool.query(`insert into event_staff (event_id, user_id) values ($1, $2) on conflict do nothing`, [

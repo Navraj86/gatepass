@@ -13,9 +13,7 @@ export type HoldInput = {
 
 export type HoldFailure = "conflict" | "not_on_sale" | "limit_exceeded";
 
-export type HoldResult =
-  | { ok: true; seatIds: string[]; heldUntil: Date }
-  | { ok: false; reason: HoldFailure };
+export type HoldResult = { ok: true; seatIds: string[]; heldUntil: Date } | { ok: false; reason: HoldFailure };
 
 export async function holdSeats({ userId, eventId, seatIds }: HoldInput): Promise<HoldResult> {
   const ids = [...new Set(seatIds)];
@@ -42,10 +40,7 @@ export async function holdSeats({ userId, eventId, seatIds }: HoldInput): Promis
       return await fail("not_on_sale");
     }
 
-    await client.query("select pg_advisory_xact_lock(hashtext($1), hashtext($2))", [
-      userId,
-      eventId,
-    ]);
+    await client.query("select pg_advisory_xact_lock(hashtext($1), hashtext($2))", [userId, eventId]);
 
     const held = await client.query<{ count: number }>(
       `select count(*)::int as count from seats
@@ -95,13 +90,7 @@ export async function holdSeats({ userId, eventId, seatIds }: HoldInput): Promis
   }
 }
 
-export async function releaseHolds({
-  userId,
-  eventId,
-}: {
-  userId: string;
-  eventId: string;
-}): Promise<string[]> {
+export async function releaseHolds({ userId, eventId }: { userId: string; eventId: string }): Promise<string[]> {
   const { rows } = await pool.query<{ id: string }>(
     `update seats
      set held_by = null, held_until = null, updated_at = now()

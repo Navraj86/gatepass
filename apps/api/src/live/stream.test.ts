@@ -1,5 +1,5 @@
-import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
+import type { AddressInfo } from "node:net";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../app.js";
 import { holdSeats } from "../holds/holds.js";
@@ -44,8 +44,7 @@ async function openStream(url: string) {
       const { value, done } = await reader.read();
       if (done) throw new Error("Stream closed");
       buffer += value;
-      let end: number;
-      while ((end = buffer.indexOf("\n\n")) !== -1) {
+      for (let end = buffer.indexOf("\n\n"); end !== -1; end = buffer.indexOf("\n\n")) {
         const frame = buffer.slice(0, end);
         buffer = buffer.slice(end + 2);
         const event = /^event: (.+)$/m.exec(frame)?.[1];

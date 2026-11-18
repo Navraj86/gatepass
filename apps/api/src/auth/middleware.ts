@@ -1,8 +1,8 @@
-import type { NextFunction, Request, Response } from "express";
 import { fromNodeHeaders } from "better-auth/node";
+import type { NextFunction, Request, Response } from "express";
 import { config } from "../config.js";
 import { pool } from "../db/client.js";
-import { userRoles, type UserRole } from "../db/schema.js";
+import { type UserRole, userRoles } from "../db/schema.js";
 import { HttpError } from "../http/problem.js";
 import { auth } from "./auth.js";
 

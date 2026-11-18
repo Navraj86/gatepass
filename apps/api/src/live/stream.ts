@@ -3,7 +3,7 @@ import { logger } from "../observability/logger.js";
 import { sseConnections, sseUpdateLag } from "../observability/metrics.js";
 import { readSeatMap, type SeatChange } from "../seats/seat-map.js";
 import { Coalescer } from "./coalescer.js";
-import { seatBus, type SeatBus, type SeatMessage } from "./seat-bus.js";
+import { type SeatBus, type SeatMessage, seatBus } from "./seat-bus.js";
 
 export const BATCH_MS = 250;
 export const HEARTBEAT_MS = 25_000;

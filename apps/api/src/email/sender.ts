@@ -44,7 +44,10 @@ function resendSender(apiKey: string): EmailSender {
 /** Without an API key (local runs, load tests) emails are only logged. */
 const logSender: EmailSender = {
   async send(email) {
-    logger.info({ subject: email.subject, attachments: email.attachments?.length ?? 0 }, "Email not sent (no provider)");
+    logger.info(
+      { subject: email.subject, attachments: email.attachments?.length ?? 0 },
+      "Email not sent (no provider)",
+    );
   },
 };
 

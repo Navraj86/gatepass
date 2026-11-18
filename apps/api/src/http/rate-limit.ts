@@ -1,10 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import {
-  RateLimiterMemory,
-  RateLimiterRedis,
-  RateLimiterRes,
-  type RateLimiterAbstract,
-} from "rate-limiter-flexible";
+import { type RateLimiterAbstract, RateLimiterMemory, RateLimiterRedis, RateLimiterRes } from "rate-limiter-flexible";
 import { logger } from "../observability/logger.js";
 import { redis } from "../redis/client.js";
 import { sendProblem } from "./problem.js";

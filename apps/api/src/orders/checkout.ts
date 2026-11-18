@@ -1,9 +1,9 @@
 import type { PoolClient } from "pg";
 import { pool } from "../db/client.js";
-import { announceSeats } from "../live/announce.js";
-import { checkoutSessions } from "../observability/metrics.js";
-import { logger } from "../observability/logger.js";
 import { isUniqueViolation } from "../db/errors.js";
+import { announceSeats } from "../live/announce.js";
+import { logger } from "../observability/logger.js";
+import { checkoutSessions } from "../observability/metrics.js";
 import { paymentGateway } from "../payments/gateway.js";
 
 export const CHECKOUT_MINUTES = 15;

@@ -1,5 +1,5 @@
-import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { drizzle } from "drizzle-orm/node-postgres";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
 
 // Runs as a one-off container before the API starts, so it only needs DATABASE_URL.

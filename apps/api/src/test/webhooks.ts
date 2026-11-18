@@ -3,9 +3,7 @@ import { readFileSync } from "node:fs";
 import { Webhook } from "standardwebhooks";
 import { webhookEvent } from "../payments/webhook.js";
 
-const raw = JSON.parse(
-  readFileSync(new URL("./fixtures/dodo-payment-succeeded.json", import.meta.url), "utf8"),
-);
+const raw = JSON.parse(readFileSync(new URL("./fixtures/dodo-payment-succeeded.json", import.meta.url), "utf8"));
 const fixture = raw.event ?? raw;
 
 export function paymentSucceededJson(paymentId: string, orderId: string, amountMinor: number) {

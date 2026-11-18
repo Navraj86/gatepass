@@ -15,8 +15,11 @@ import {
 } from "drizzle-orm/pg-core";
 
 const timestamps = {
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
 };
 
 // Better Auth tables (user, session, account, verification). Field names match
@@ -123,38 +126,48 @@ export const eventStaff = pgTable(
   (t) => [primaryKey({ columns: [t.eventId, t.userId] }), index("event_staff_user_id_idx").on(t.userId)],
 );
 
-export const sections = pgTable("sections", {
-        id: uuid("id").primaryKey().defaultRandom(),
-        eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
-        name: text("name").notNull(),
-        priceMinor: integer("price_minor").notNull(),
-        ...timestamps,
-    },
-    (t) => [
-        unique("sections_event_name_unique").on(t.eventId, t.name),
-        check("sections_price_non_negative", sql`${t.priceMinor} >= 0`),
-    ],
+export const sections = pgTable(
+  "sections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    priceMinor: integer("price_minor").notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    unique("sections_event_name_unique").on(t.eventId, t.name),
+    check("sections_price_non_negative", sql`${t.priceMinor} >= 0`),
+  ],
 );
 
 export const seatStatus = pgEnum("seat_status", ["available", "sold", "blocked"]);
 
-export const seats = pgTable("seats", {
-        id: uuid("id").primaryKey().defaultRandom(),
-        eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
-        sectionId: uuid("section_id").notNull().references(() => sections.id, { onDelete: "cascade" }),
-        rowLabel: text("row_label").notNull(),
-        seatNumber: integer("seat_number").notNull(),
-        status: seatStatus("status").notNull().default("available"),
-        heldBy: text("held_by"),
-        heldUntil: timestamp("held_until", { withTimezone: true }),
-        ...timestamps,
-    },
-    (t) => [
-        unique("seats_position_unique").on(t.sectionId, t.rowLabel, t.seatNumber),
-        index("seats_event_id_idx").on(t.eventId),
-        check("seats_number_positive", sql`${t.seatNumber} >= 0`),
-        check("seats_hold_pair", sql`(${t.heldBy} is null) = (${t.heldUntil} is null)`),
-    ],
+export const seats = pgTable(
+  "seats",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    sectionId: uuid("section_id")
+      .notNull()
+      .references(() => sections.id, { onDelete: "cascade" }),
+    rowLabel: text("row_label").notNull(),
+    seatNumber: integer("seat_number").notNull(),
+    status: seatStatus("status").notNull().default("available"),
+    heldBy: text("held_by"),
+    heldUntil: timestamp("held_until", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    unique("seats_position_unique").on(t.sectionId, t.rowLabel, t.seatNumber),
+    index("seats_event_id_idx").on(t.eventId),
+    check("seats_number_positive", sql`${t.seatNumber} >= 0`),
+    check("seats_hold_pair", sql`(${t.heldBy} is null) = (${t.heldUntil} is null)`),
+  ],
 );
 
 export const orderStatus = pgEnum("order_status", [
@@ -193,9 +206,7 @@ export const orders = pgTable(
     ...timestamps,
   },
   (t) => [
-    uniqueIndex("orders_one_pending_per_user_event")
-      .on(t.userId, t.eventId)
-      .where(sql`${t.status} = 'pending'`),
+    uniqueIndex("orders_one_pending_per_user_event").on(t.userId, t.eventId).where(sql`${t.status} = 'pending'`),
     index("orders_user_id_idx").on(t.userId),
     index("orders_event_id_idx").on(t.eventId),
     check("orders_amount_positive", sql`${t.amountMinor} > 0`),
@@ -203,10 +214,7 @@ export const orders = pgTable(
       "orders_paid_at_matches_status",
       sql`(${t.status} in ('paid', 'refunding', 'refunded')) = (${t.paidAt} is not null)`,
     ),
-    check(
-      "orders_charged_pair",
-      sql`(${t.chargedAmountMinor} is null) = (${t.chargedCurrency} is null)`,
-    ),
+    check("orders_charged_pair", sql`(${t.chargedAmountMinor} is null) = (${t.chargedCurrency} is null)`),
   ],
 );
 
@@ -250,15 +258,10 @@ export const tickets = pgTable(
     ...timestamps,
   },
   (t) => [
-    uniqueIndex("tickets_one_valid_per_seat")
-      .on(t.seatId)
-      .where(sql`${t.status} = 'valid'`),
+    uniqueIndex("tickets_one_valid_per_seat").on(t.seatId).where(sql`${t.status} = 'valid'`),
     index("tickets_event_id_idx").on(t.eventId),
     index("tickets_order_id_idx").on(t.orderId),
     check("tickets_scan_pair", sql`(${t.scannedAt} is null) = (${t.scannedBy} is null)`),
-    check(
-      "tickets_no_refund_after_scan",
-      sql`not (${t.status} = 'refunded' and ${t.scannedAt} is not null)`,
-    ),
+    check("tickets_no_refund_after_scan", sql`not (${t.status} = 'refunded' and ${t.scannedAt} is not null)`),
   ],
 );

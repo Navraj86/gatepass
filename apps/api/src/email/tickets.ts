@@ -4,7 +4,7 @@ import { config } from "../config.js";
 import { pool } from "../db/client.js";
 import { logger } from "../observability/logger.js";
 import { emailsSent } from "../observability/metrics.js";
-import { emailSender, isDeliverable, type Email } from "./sender.js";
+import { type Email, emailSender, isDeliverable } from "./sender.js";
 
 type OrderForEmail = {
   id: string;
@@ -19,7 +19,7 @@ type OrderForEmail = {
 
 type TicketForEmail = { code: string; sectionName: string; rowLabel: string; seatNumber: number };
 
-const escape = (s: string) =>
+const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 async function loadOrder(orderId: string): Promise<OrderForEmail | undefined> {
@@ -74,7 +74,7 @@ export async function sendTicketEmail(orderId: string) {
           <img src="cid:ticket-${i}" width="160" height="160" alt="QR code" style="display:block" />
         </td>
         <td style="padding:12px 16px;border-top:1px solid #e5e5e5;font-family:sans-serif">
-          <strong>${escape(t.sectionName)}, row ${escape(t.rowLabel)}, seat ${t.seatNumber}</strong><br />
+          <strong>${escapeHtml(t.sectionName)}, row ${escapeHtml(t.rowLabel)}, seat ${t.seatNumber}</strong><br />
           <code style="font-size:13px">${formatTicketCode(t.code)}</code>
         </td>
       </tr>`,
@@ -86,8 +86,8 @@ export async function sendTicketEmail(orderId: string) {
     subject: `Your tickets for ${order.eventTitle}`,
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:auto;color:#111">
-        <h1 style="font-size:22px">You're going to ${escape(order.eventTitle)}</h1>
-        <p>${escape(order.venue)} &middot; ${when}</p>
+        <h1 style="font-size:22px">You're going to ${escapeHtml(order.eventTitle)}</h1>
+        <p>${escapeHtml(order.venue)} &middot; ${when}</p>
         <p>Show each QR code at the door. Every code works once.</p>
         <table style="border-collapse:collapse;width:100%">${rows}</table>
         <p>Total paid: ${formatMoney(order.amountMinor, order.currency)} plus applicable taxes.</p>

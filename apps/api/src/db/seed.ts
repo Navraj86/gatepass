@@ -3,7 +3,7 @@ import { auth } from "../auth/auth.js";
 import { config } from "../config.js";
 import { seatGrid } from "../events/seat-grid.js";
 import { db, pool } from "./client.js";
-import { eventStaff, events, seats, sections, user, type UserRole } from "./schema.js";
+import { eventStaff, events, seats, sections, type UserRole, user } from "./schema.js";
 
 /**
  * Creates the demo accounts and the demo event. Safe to rerun: existing
@@ -82,7 +82,9 @@ async function main() {
       .returning();
     await db
       .insert(seats)
-      .values(seatGrid(s.rows, s.seatsPerRow, firstRow).map((g) => ({ ...g, eventId: event.id, sectionId: section.id })));
+      .values(
+        seatGrid(s.rows, s.seatsPerRow, firstRow).map((g) => ({ ...g, eventId: event.id, sectionId: section.id })),
+      );
     firstRow += s.rows;
   }
   await db.insert(eventStaff).values({ eventId: event.id, userId: ids.staff });

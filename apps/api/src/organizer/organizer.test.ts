@@ -58,11 +58,7 @@ describe("organizer events", () => {
     expect(published.body.event.status).toBe("published");
 
     await request(app).get(`/api/events/${eventId}`).expect(200);
-    await request(app)
-      .patch(`/api/organizer/events/${eventId}`)
-      .set(organizer)
-      .send({ title: "Too late" })
-      .expect(409);
+    await request(app).patch(`/api/organizer/events/${eventId}`).set(organizer).send({ title: "Too late" }).expect(409);
   });
 
   it("refuses to publish an event without seats", async () => {

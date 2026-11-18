@@ -8,17 +8,10 @@ export const logger = pino({
   base: { service: "api", instance: config.INSTANCE_NAME },
   redact: {
     // Never log credentials, ticket codes or customer details.
-    paths: [
-      "req.headers.cookie",
-      "req.headers.authorization",
-      'req.headers["webhook-signature"]',
-      "code",
-      "email",
-    ],
+    paths: ["req.headers.cookie", "req.headers.authorization", 'req.headers["webhook-signature"]', "code", "email"],
     remove: true,
   },
-  transport:
-    config.NODE_ENV === "development" ? { target: "pino-pretty", options: { singleLine: true } } : undefined,
+  transport: config.NODE_ENV === "development" ? { target: "pino-pretty", options: { singleLine: true } } : undefined,
 });
 
 export const httpLogger = pinoHttp({

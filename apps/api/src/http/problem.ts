@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { z } from "zod";
+import type { z } from "zod";
 
 /**
  * Every error leaves the API as application/problem+json (RFC 9457) with a
