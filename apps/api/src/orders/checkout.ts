@@ -151,7 +151,14 @@ export async function releaseOrderHolds(client: PoolClient, orderId: string, use
   return rows.map((r) => r.id);
 }
 
-export async function cancelCheckout({ userId, orderId }: { userId: string; orderId: string }) {
+export async function cancelCheckout(input: { userId: string; orderId: string }) {
+  const result = await cancelInTransaction(input);
+  // After the client is released, like every announcement (see holdSeats).
+  if (result.ok) await announceSeats(result.eventId, result.released);
+  return { ok: result.ok, released: result.released };
+}
+
+async function cancelInTransaction({ userId, orderId }: { userId: string; orderId: string }) {
   const client = await pool.connect();
   try {
     await client.query("begin");
@@ -163,12 +170,11 @@ export async function cancelCheckout({ userId, orderId }: { userId: string; orde
     );
     if (cancelled.rowCount === 0) {
       await client.query("rollback");
-      return { ok: false as const, released: [] as string[] };
+      return { ok: false as const, eventId: "", released: [] as string[] };
     }
     const released = await releaseOrderHolds(client, orderId, userId);
     await client.query("commit");
-    await announceSeats(cancelled.rows[0].event_id, released);
-    return { ok: true as const, released };
+    return { ok: true as const, eventId: cancelled.rows[0].event_id, released };
   } catch (err) {
     await client.query("rollback");
     throw err;

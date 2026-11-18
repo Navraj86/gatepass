@@ -81,7 +81,8 @@ export async function processWebhook(event: WebhookEvent): Promise<WebhookOutcom
 
 async function fulfillPayment(data: PaymentSucceededData): Promise<WebhookOutcome> {
   const result = await fulfillInTransaction(data);
-  // Side effects run after the commit, never inside the transaction.
+  // Side effects run after the commit and after the client is back in the pool.
+  if (result.announce) await announceSeats(result.announce.eventId, result.announce.seatIds);
   if (result.outcome === "fulfilled" && result.orderId) {
     await sendTicketEmail(result.orderId);
   }
@@ -92,9 +93,12 @@ async function fulfillPayment(data: PaymentSucceededData): Promise<WebhookOutcom
   return result.outcome;
 }
 
-async function fulfillInTransaction(
-  data: PaymentSucceededData,
-): Promise<{ outcome: WebhookOutcome; orderId?: string; refundOrderId?: string }> {
+async function fulfillInTransaction(data: PaymentSucceededData): Promise<{
+  outcome: WebhookOutcome;
+  orderId?: string;
+  refundOrderId?: string;
+  announce?: { eventId: string; seatIds: string[] };
+}> {
   const client = await pool.connect();
   let orderId: string | undefined;
   try {
@@ -175,14 +179,13 @@ async function fulfillInTransaction(
 
     await client.query("commit");
     checkoutPayments.inc({ result: "paid" });
-    await announceSeats(order.event_id, seatIds);
-    return { outcome: "fulfilled", orderId: order.id };
+    return { outcome: "fulfilled", orderId: order.id, announce: { eventId: order.event_id, seatIds } };
   } catch (err) {
     await client.query("rollback");
     if (orderId && isUniqueViolation(err, "tickets_one_valid_per_seat")) {
       oversellsBlocked.inc({ where: "ticket_index" });
       logger.error({ orderId }, "Oversell blocked by tickets_one_valid_per_seat");
-      await pool.query(
+      await client.query(
         `update orders
          set status = 'refunding', paid_at = now(), charged_amount_minor = $2,
              charged_currency = $3, charged_tax_minor = $4, updated_at = now()
@@ -198,6 +201,14 @@ async function fulfillInTransaction(
 }
 
 async function cancelByPayment(paymentId: string): Promise<WebhookOutcome> {
+  const result = await cancelPaymentInTransaction(paymentId);
+  if (result.announce) await announceSeats(result.announce.eventId, result.announce.seatIds);
+  return result.outcome;
+}
+
+async function cancelPaymentInTransaction(
+  paymentId: string,
+): Promise<{ outcome: WebhookOutcome; announce?: { eventId: string; seatIds: string[] } }> {
   const client = await pool.connect();
   try {
     await client.query("begin");
@@ -210,13 +221,12 @@ async function cancelByPayment(paymentId: string): Promise<WebhookOutcome> {
     const order = cancelled.rows[0];
     if (!order) {
       await client.query("rollback");
-      return "ignored";
+      return { outcome: "ignored" };
     }
     const released = await releaseOrderHolds(client, order.id, order.user_id);
     await client.query("commit");
     checkoutPayments.inc({ result: "cancelled" });
-    await announceSeats(order.event_id, released);
-    return "cancelled";
+    return { outcome: "cancelled", announce: { eventId: order.event_id, seatIds: released } };
   } catch (err) {
     await client.query("rollback");
     throw err;

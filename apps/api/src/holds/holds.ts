@@ -15,7 +15,18 @@ export type HoldFailure = "conflict" | "not_on_sale" | "limit_exceeded";
 
 export type HoldResult = { ok: true; seatIds: string[]; heldUntil: Date } | { ok: false; reason: HoldFailure };
 
-export async function holdSeats({ userId, eventId, seatIds }: HoldInput): Promise<HoldResult> {
+/**
+ * Holds every requested seat or none. The announcement runs after the client is
+ * back in the pool: it needs a connection of its own, and a request that kept its
+ * first one while waiting for a second could starve the pool under load.
+ */
+export async function holdSeats(input: HoldInput): Promise<HoldResult> {
+  const result = await holdInTransaction(input);
+  if (result.ok) await announceSeats(input.eventId, result.seatIds);
+  return result;
+}
+
+async function holdInTransaction({ userId, eventId, seatIds }: HoldInput): Promise<HoldResult> {
   const ids = [...new Set(seatIds)];
   if (ids.length === 0) {
     throw new Error("seatIds must not be empty");
@@ -77,7 +88,6 @@ export async function holdSeats({ userId, eventId, seatIds }: HoldInput): Promis
     }
 
     await client.query("commit");
-    await announceSeats(eventId, ids);
     return { ok: true, seatIds: rows.map((r) => r.id), heldUntil: rows[0].held_until };
   } catch (err) {
     await client.query("rollback");

@@ -32,6 +32,19 @@ describe("holdSeats", () => {
     expect(row.heldUntil).not.toBeNull();
   });
 
+  // Regression: announcing while still holding the transaction's client needed a second
+  // connection per request, so 200 simultaneous winners deadlocked a 50-connection pool.
+  it("many simultaneous winners do not starve the connection pool", { timeout: 20_000 }, async () => {
+    const { event, seats: eventSeats } = await createEventWithSeats(200);
+    await warmPool();
+
+    const results = await Promise.all(
+      eventSeats.map((seat, i) => holdSeats({ userId: `user-${i}`, eventId: event.id, seatIds: [seat.id] })),
+    );
+
+    expect(results.filter((r) => r.ok)).toHaveLength(200);
+  });
+
   it("C2: overlapping multi-seat holds are all-or-nothing, with no errors", async () => {
     const { event, seats: eventSeats } = await createEventWithSeats(4);
     await warmPool();
