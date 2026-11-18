@@ -5,6 +5,7 @@ import { currentUser, requireUser } from "../auth/middleware.js";
 import { pool } from "../db/client.js";
 import { HttpError, parse, sendProblem } from "../http/problem.js";
 import { byUser, rateLimit } from "../http/rate-limit.js";
+import { sendTicketEmail } from "../email/tickets.js";
 import { cancelCheckout, startCheckout, type CheckoutFailure } from "./checkout.js";
 
 const orderParams = z.object({ orderId: z.uuid() });
@@ -16,6 +17,7 @@ const failures: Record<CheckoutFailure, { status: number; detail: string }> = {
 };
 
 const orderLimit = rateLimit("orders", 5, 60, byUser);
+const resendLimit = rateLimit("resend-email", 3, 600, byUser);
 
 export const ordersRouter = Router();
 
@@ -74,4 +76,17 @@ ordersRouter.post("/orders/:orderId/cancel", requireUser, async (req, res) => {
     throw new HttpError(409, "not_pending", "This order can no longer be cancelled");
   }
   res.json({ released: result.released });
+});
+
+ordersRouter.post("/orders/:orderId/resend-email", requireUser, resendLimit, async (req, res) => {
+  const { orderId } = parse(orderParams, req.params, "order id");
+  const { rows } = await pool.query(`select 1 from orders where id = $1 and user_id = $2 and status = 'paid'`, [
+    orderId,
+    currentUser(res).id,
+  ]);
+  if (rows.length === 0) {
+    throw new HttpError(404, "not_found", "No paid order with this id");
+  }
+  await sendTicketEmail(orderId);
+  res.status(202).json({ sent: true });
 });

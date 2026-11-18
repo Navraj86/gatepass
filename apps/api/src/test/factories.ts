@@ -13,7 +13,7 @@ export async function createUsers(ids: string[], role: UserRole = "attendee") {
   if (ids.length === 0) return;
   await db
     .insert(user)
-    .values(ids.map((id) => ({ id, name: id, email: `${id}@example.com`, role })))
+    .values(ids.map((id) => ({ id, name: id, email: `${id}@inbox.gatepass.dev`, role })))
     .onConflictDoNothing();
 }
 

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { pool } from "../db/client.js";
 import { isUniqueViolation } from "../db/errors.js";
+import { sendSeatLostEmail, sendTicketEmail } from "../email/tickets.js";
 import { announceSeats } from "../live/announce.js";
 import { releaseOrderHolds } from "../orders/checkout.js";
 import { requestRefund } from "../orders/refund.js";
@@ -87,15 +88,20 @@ export async function processWebhook(event: WebhookEvent): Promise<WebhookOutcom
 
 async function fulfillPayment(data: PaymentSucceededData): Promise<WebhookOutcome> {
   const result = await fulfillInTransaction(data);
+  // Side effects run after the commit, never inside the transaction.
+  if (result.outcome === "fulfilled" && result.orderId) {
+    await sendTicketEmail(result.orderId);
+  }
   if (result.refundOrderId) {
     await requestRefund(result.refundOrderId);
+    await sendSeatLostEmail(result.refundOrderId);
   }
   return result.outcome;
 }
 
 async function fulfillInTransaction(
   data: PaymentSucceededData,
-): Promise<{ outcome: WebhookOutcome; refundOrderId?: string }> {
+): Promise<{ outcome: WebhookOutcome; orderId?: string; refundOrderId?: string }> {
   const client = await pool.connect();
   let orderId: string | undefined;
   try {
@@ -177,7 +183,7 @@ async function fulfillInTransaction(
     await client.query("commit");
     checkoutPayments.inc({ result: "paid" });
     await announceSeats(order.event_id, seatIds);
-    return { outcome: "fulfilled" };
+    return { outcome: "fulfilled", orderId: order.id };
   } catch (err) {
     await client.query("rollback");
     if (orderId && isUniqueViolation(err, "tickets_one_valid_per_seat")) {

@@ -14,9 +14,9 @@ const reset = process.argv.includes("--reset");
 const password = process.env.DEMO_PASSWORD ?? (config.NODE_ENV === "production" ? undefined : "gatepass-demo");
 
 const accounts: { email: string; name: string; role: UserRole }[] = [
-  { email: "organizer@demo.gatepass.app", name: "Demo Organizer", role: "organizer" },
-  { email: "staff@demo.gatepass.app", name: "Demo Staff", role: "staff" },
-  { email: "attendee@demo.gatepass.app", name: "Demo Attendee", role: "attendee" },
+  { email: "organizer@gatepass.test", name: "Demo Organizer", role: "organizer" },
+  { email: "staff@gatepass.test", name: "Demo Staff", role: "staff" },
+  { email: "attendee@gatepass.test", name: "Demo Attendee", role: "attendee" },
 ];
 
 const layout = [

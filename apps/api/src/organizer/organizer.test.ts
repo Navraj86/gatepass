@@ -92,7 +92,7 @@ describe("organizer events", () => {
     await request(app)
       .post(`/api/organizer/events/${eventId}/staff`)
       .set(organizer)
-      .send({ email: "fan-1@example.com" })
+      .send({ email: "fan-1@inbox.gatepass.dev" })
       .expect(422);
     await request(app)
       .post(`/api/organizer/events/${eventId}/staff`)

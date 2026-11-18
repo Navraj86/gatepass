@@ -5,8 +5,10 @@ import { createApp } from "../app.js";
 import { db } from "../db/client.js";
 import { orderItems, orders, seats, tickets } from "../db/schema.js";
 import { holdSeats } from "../holds/holds.js";
+import { setEmailSender } from "../email/sender.js";
 import { setPaymentGateway } from "../payments/gateway.js";
 import { processWebhook } from "../payments/webhook.js";
+import { createFakeEmail } from "../test/fake-email.js";
 import { createFakeGateway } from "../test/fake-gateway.js";
 import { createEventWithSeats, createUsers, resetDb, warmPool } from "../test/factories.js";
 import {
@@ -23,12 +25,15 @@ const customer = { email: "buyer@example.com", name: "Test Buyer" };
 const billing = { country: "IN", zipcode: "151001" };
 
 let fake: ReturnType<typeof createFakeGateway>;
+let mail: ReturnType<typeof createFakeEmail>;
 
 beforeEach(async () => {
   await resetDb();
   await createUsers(["user-1", "user-2"]);
   fake = createFakeGateway();
   setPaymentGateway(fake.gateway);
+  mail = createFakeEmail();
+  setEmailSender(mail.sender);
 });
 
 async function holdAndCheckout(userId: string, eventId: string, seatIds: string[]) {
@@ -116,6 +121,11 @@ describe("payment webhooks", () => {
 
     const sold = await db.select().from(seats).where(eq(seats.eventId, event.id));
     expect(sold.every((s) => s.status === "sold")).toBe(true);
+
+    expect(mail.sent).toHaveLength(1);
+    expect(mail.sent[0].to).toBe("user-1@inbox.gatepass.dev");
+    expect(mail.sent[0].attachments).toHaveLength(2);
+    expect(mail.sent[0].text).toContain(issued[0].code.slice(0, 5));
   });
 
   it("C5: a payment for a seat that was resold is refunded, never ticketed", async () => {
@@ -134,6 +144,7 @@ describe("payment webhooks", () => {
     expect(refunding.dodoRefundId).toBe("ref_test_1");
     expect(fake.refunds).toHaveLength(1);
     expect(await db.select().from(tickets)).toHaveLength(0);
+    expect(mail.sent.map((m) => m.subject)).toEqual(["Your payment for Test Show is being refunded"]);
 
     const [row] = await db.select().from(seats).where(eq(seats.id, seat.id));
     expect(row.heldBy).toBe("user-2");
