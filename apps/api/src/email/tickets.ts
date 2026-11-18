@@ -51,6 +51,12 @@ async function deliver(kind: string, orderId: string, email: Email) {
 export async function sendTicketEmail(orderId: string) {
   const order = await loadOrder(orderId);
   if (!order) return;
+  // Check before drawing the QR codes: rendering costs about 7 ms of CPU per ticket,
+  // and in a load test it was a quarter of the API's CPU for emails never sent.
+  if (!isDeliverable(order.email)) {
+    emailsSent.inc({ result: "skipped" });
+    return;
+  }
   const { rows: tickets } = await pool.query<TicketForEmail>(
     `select t.code, sec.name as "sectionName", s.row_label as "rowLabel", s.seat_number as "seatNumber"
      from tickets t join seats s on s.id = t.seat_id join sections sec on sec.id = s.section_id
