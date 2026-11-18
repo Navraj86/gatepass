@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { requireUser } from "../auth/dev-user.js";
+import { currentUser, requireUser } from "../auth/middleware.js";
 import { pool } from "../db/client.js";
 import { HttpError, parse, sendProblem } from "../http/problem.js";
 import { byUser, rateLimit } from "../http/rate-limit.js";
@@ -29,7 +29,7 @@ export const ordersRouter = Router();
 ordersRouter.post("/orders", requireUser, orderLimit, async (req, res) => {
   const { eventId, email, name, country, zipcode } = parse(checkoutBody, req.body, "checkout details");
   const result = await startCheckout({
-    userId: res.locals.userId,
+    userId: currentUser(res).id,
     eventId,
     customer: { email, name },
     billing: { country, zipcode },
@@ -54,7 +54,7 @@ ordersRouter.get("/orders/:orderId", requireUser, async (req, res) => {
      from orders o
      join events e on e.id = o.event_id
      where o.id = $1 and o.user_id = $2`,
-    [orderId, res.locals.userId],
+    [orderId, currentUser(res).id],
   );
   if (rows.length === 0) {
     throw new HttpError(404, "not_found", "Order not found");
@@ -76,7 +76,7 @@ ordersRouter.get("/orders/:orderId", requireUser, async (req, res) => {
 
 ordersRouter.post("/orders/:orderId/cancel", requireUser, async (req, res) => {
   const { orderId } = parse(orderParams, req.params, "order id");
-  const result = await cancelCheckout({ userId: res.locals.userId, orderId });
+  const result = await cancelCheckout({ userId: currentUser(res).id, orderId });
   if (!result.ok) {
     throw new HttpError(409, "not_pending", "This order can no longer be cancelled");
   }

@@ -1,16 +1,102 @@
 import { sql } from "drizzle-orm";
-import { check, index, integer, pgEnum, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  check,
+  index,
+  integer,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  unique,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 const timestamps = {
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 };
 
+// Better Auth tables (user, session, account, verification). Field names match
+// Better Auth's models; columns are snake_case like the rest of the schema.
+
+export const userRoles = ["attendee", "organizer", "staff"] as const;
+export type UserRole = (typeof userRoles)[number];
+
+export const user = pgTable(
+  "user",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    email: text("email").notNull().unique(),
+    emailVerified: boolean("email_verified").notNull().default(false),
+    image: text("image"),
+    role: text("role").$type<UserRole>().notNull().default("attendee"),
+    ...timestamps,
+  },
+  (t) => [check("user_role_valid", sql`${t.role} in ('attendee', 'organizer', 'staff')`)],
+);
+
+export const session = pgTable(
+  "session",
+  {
+    id: text("id").primaryKey(),
+    token: text("token").notNull().unique(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    ...timestamps,
+  },
+  (t) => [index("session_user_id_idx").on(t.userId)],
+);
+
+export const account = pgTable(
+  "account",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at", { withTimezone: true }),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { withTimezone: true }),
+    scope: text("scope"),
+    password: text("password"),
+    ...timestamps,
+  },
+  (t) => [index("account_user_id_idx").on(t.userId)],
+);
+
+export const verification = pgTable(
+  "verification",
+  {
+    id: text("id").primaryKey(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    ...timestamps,
+  },
+  (t) => [index("verification_identifier_idx").on(t.identifier)],
+);
+
 export const eventStatus = pgEnum("event_status", ["draft", "published", "cancelled"]);
 
-export const events = pgTable("events", {
+export const events = pgTable(
+  "events",
+  {
     id: uuid("id").primaryKey().defaultRandom(),
-    organizerId: text("organizer_id").notNull(),
+    organizerId: text("organizer_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
     title: text("title").notNull(),
     description: text("description"),
     venue: text("venue").notNull(),
@@ -19,7 +105,23 @@ export const events = pgTable("events", {
     status: eventStatus("status").notNull().default("draft"),
     currency: text("currency").notNull().default("USD"),
     ...timestamps,
-});
+  },
+  (t) => [index("events_organizer_id_idx").on(t.organizerId)],
+);
+
+export const eventStaff = pgTable(
+  "event_staff",
+  {
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.eventId, t.userId] }), index("event_staff_user_id_idx").on(t.userId)],
+);
 
 export const sections = pgTable("sections", {
         id: uuid("id").primaryKey().defaultRandom(),
@@ -69,7 +171,9 @@ export const orders = pgTable(
   "orders",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: text("user_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
     eventId: uuid("event_id")
       .notNull()
       .references(() => events.id, { onDelete: "restrict" }),
@@ -142,7 +246,7 @@ export const tickets = pgTable(
     code: text("code").notNull().unique(),
     status: ticketStatus("status").notNull().default("valid"),
     scannedAt: timestamp("scanned_at", { withTimezone: true }),
-    scannedBy: text("scanned_by"), // link to users added with auth in Week 4
+    scannedBy: text("scanned_by").references(() => user.id, { onDelete: "restrict" }),
     ...timestamps,
   },
   (t) => [

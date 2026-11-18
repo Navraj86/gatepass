@@ -8,7 +8,7 @@ import { holdSeats } from "../holds/holds.js";
 import { setPaymentGateway } from "../payments/gateway.js";
 import { processWebhook } from "../payments/webhook.js";
 import { createFakeGateway } from "../test/fake-gateway.js";
-import { createEventWithSeats, resetDb, warmPool } from "../test/factories.js";
+import { createEventWithSeats, createUsers, resetDb, warmPool } from "../test/factories.js";
 import { paymentFailed, paymentSucceeded, paymentSucceededJson, signedHeaders } from "../test/webhooks.js";
 import { cancelCheckout, startCheckout } from "./checkout.js";
 
@@ -19,6 +19,7 @@ let fake: ReturnType<typeof createFakeGateway>;
 
 beforeEach(async () => {
   await resetDb();
+  await createUsers(["user-1", "user-2"]);
   fake = createFakeGateway();
   setPaymentGateway(fake.gateway);
 });

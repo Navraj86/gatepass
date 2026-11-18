@@ -1,8 +1,13 @@
+import { toNodeHandler } from "better-auth/node";
 import express from "express";
 import helmet from "helmet";
+import { auth } from "./auth/auth.js";
+import { currentUser, requireUser } from "./auth/middleware.js";
 import { pool } from "./db/client.js";
-import { seatBus } from "./live/seat-bus.js";
+import { sameOrigin } from "./http/origin.js";
 import { errorHandler, notFound } from "./http/problem.js";
+import { byIp, rateLimit } from "./http/rate-limit.js";
+import { seatBus } from "./live/seat-bus.js";
 import { httpLogger } from "./observability/logger.js";
 import { measureRequests, registry } from "./observability/metrics.js";
 import { ordersRouter } from "./orders/routes.js";
@@ -37,8 +42,19 @@ export function createApp() {
     res.status(ok ? 200 : 503).json({ status: ok ? "ok" : "error", db, bus });
   });
 
+  // Raw-body routes go before express.json(): webhook signatures and Better
+  // Auth both read the request stream themselves.
   app.use("/api", webhookRouter);
+  app.post("/api/auth/sign-in/email", rateLimit("sign-in", 10, 60, byIp));
+  app.post("/api/auth/sign-up/email", rateLimit("sign-up", 5, 60, byIp));
+  app.all("/api/auth/{*path}", toNodeHandler(auth));
+
   app.use(express.json({ limit: "100kb" }));
+  app.use("/api", sameOrigin);
+
+  app.get("/api/me", requireUser, (_req, res) => {
+    res.json({ user: currentUser(res) });
+  });
 
   app.use("/api", seatsRouter);
   app.use("/api", ordersRouter);

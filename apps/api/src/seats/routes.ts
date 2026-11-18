@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { requireUser } from "../auth/dev-user.js";
+import { currentUser, requireUser } from "../auth/middleware.js";
 import { pool } from "../db/client.js";
 import { holdSeats, MAX_SEATS_PER_USER, releaseHolds, type HoldFailure } from "../holds/holds.js";
 import { HttpError, parse, sendProblem } from "../http/problem.js";
@@ -84,7 +84,7 @@ seatsRouter.post("/events/:eventId/holds", requireUser, holdLimit, async (req, r
   const { eventId } = parse(eventParams, req.params, "event id");
   const { seatIds } = parse(holdBody, req.body, "seat list");
 
-  const result = await holdSeats({ userId: res.locals.userId, eventId, seatIds });
+  const result = await holdSeats({ userId: currentUser(res).id, eventId, seatIds });
   if (!result.ok) {
     seatHolds.inc({ result: metricResult[result.reason] });
     const { status, detail } = failures[result.reason];
@@ -101,13 +101,13 @@ seatsRouter.get("/events/:eventId/holds", requireUser, async (req, res) => {
   const { rows } = await pool.query(
     `select id as "seatId", held_until as "heldUntil" from seats
      where event_id = $1 and held_by = $2 and status = 'available' and held_until > now()`,
-    [eventId, res.locals.userId],
+    [eventId, currentUser(res).id],
   );
   res.json({ holds: rows });
 });
 
 seatsRouter.delete("/events/:eventId/holds", requireUser, async (req, res) => {
   const { eventId } = parse(eventParams, req.params, "event id");
-  const released = await releaseHolds({ userId: res.locals.userId, eventId });
+  const released = await releaseHolds({ userId: currentUser(res).id, eventId });
   res.json({ released });
 });

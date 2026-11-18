@@ -29,6 +29,13 @@
       "when": 1795025402336,
       "tag": "0003_rename_organizer_id",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795025955706,
+      "tag": "0004_auth_and_staff",
+      "breakpoints": true
     }
   ]
 }

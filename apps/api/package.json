@@ -10,11 +10,14 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsx src/db/seed.ts",
+    "db:seed": "tsx src/db/seed.ts --reset",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:seed:demo": "tsx src/db/seed.ts",
+    "user:role": "tsx src/db/set-role.ts"
   },
   "dependencies": {
+    "better-auth": "^1.7.26",
     "dodopayments": "^2.61.1",
     "dotenv": "^18.0.9",
     "drizzle-orm": "^0.45.4",

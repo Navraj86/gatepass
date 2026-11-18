@@ -16,6 +16,7 @@ const schema = z
     DATABASE_URL: z.string().min(1),
     DB_POOL_MAX: z.coerce.number().int().positive().default(10),
     REDIS_URL: z.string().optional(),
+    BETTER_AUTH_SECRET: z.string().min(32, "must be at least 32 characters"),
     DEV_AUTH: flag,
     LOAD_TEST: flag,
     DODO_PAYMENTS_API_KEY: z.string().optional(),

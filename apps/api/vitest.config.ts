@@ -6,6 +6,7 @@ process.env.DODO_PAYMENTS_WEBHOOK_KEY =
   "whsec_" + Buffer.from("gatepass-test-webhook-secret-123").toString("base64");
 process.env.APP_URL = "http://localhost:3000";
 process.env.NODE_ENV = "test";
+process.env.BETTER_AUTH_SECRET = "test-secret-test-secret-test-secret-123";
 process.env.DEV_AUTH = "true";
 
 export default defineConfig({
