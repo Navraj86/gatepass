@@ -1,8 +1,9 @@
+import { MAX_SEATS_PER_ORDER } from "@gatepass/shared";
 import { pool } from "../db/client.js";
 import { announceSeats } from "../live/announce.js";
 
 export const HOLD_MINUTES = 10;
-export const MAX_SEATS_PER_USER = 6;
+export const MAX_SEATS_PER_USER = MAX_SEATS_PER_ORDER;
 
 export type HoldInput = {
   userId: string;

@@ -17,6 +17,7 @@
     "user:role": "tsx src/db/set-role.ts"
   },
   "dependencies": {
+    "@gatepass/shared": "workspace:*",
     "better-auth": "^1.7.26",
     "dodopayments": "^2.61.1",
     "dotenv": "^18.0.9",

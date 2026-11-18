@@ -1,3 +1,4 @@
+import { holdSeatsSchema } from "@gatepass/shared";
 import { Router } from "express";
 import { z } from "zod";
 import { currentUser, requireUser } from "../auth/middleware.js";
@@ -10,9 +11,6 @@ import { seatHolds } from "../observability/metrics.js";
 import { readSeatMap } from "./seat-map.js";
 
 const eventParams = z.object({ eventId: z.uuid() });
-const holdBody = z.object({
-  seatIds: z.array(z.uuid()).min(1).max(MAX_SEATS_PER_USER),
-});
 
 const failures: Record<HoldFailure, { status: number; detail: string }> = {
   conflict: { status: 409, detail: "One or more seats were just taken" },
@@ -82,7 +80,7 @@ seatsRouter.get("/events/:eventId/seats/stream", async (req, res) => {
 
 seatsRouter.post("/events/:eventId/holds", requireUser, holdLimit, async (req, res) => {
   const { eventId } = parse(eventParams, req.params, "event id");
-  const { seatIds } = parse(holdBody, req.body, "seat list");
+  const { seatIds } = parse(holdSeatsSchema, req.body, "seat list");
 
   const result = await holdSeats({ userId: currentUser(res).id, eventId, seatIds });
   if (!result.ok) {

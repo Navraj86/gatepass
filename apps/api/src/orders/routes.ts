@@ -1,3 +1,4 @@
+import { checkoutSchema } from "@gatepass/shared";
 import { Router } from "express";
 import { z } from "zod";
 import { currentUser, requireUser } from "../auth/middleware.js";
@@ -5,14 +6,6 @@ import { pool } from "../db/client.js";
 import { HttpError, parse, sendProblem } from "../http/problem.js";
 import { byUser, rateLimit } from "../http/rate-limit.js";
 import { cancelCheckout, startCheckout, type CheckoutFailure } from "./checkout.js";
-
-const checkoutBody = z.object({
-  eventId: z.uuid(),
-  email: z.email(),
-  name: z.string().trim().min(1).max(100),
-  country: z.string().regex(/^[A-Z]{2}$/),
-  zipcode: z.string().trim().min(3).max(12),
-});
 
 const orderParams = z.object({ orderId: z.uuid() });
 
@@ -27,7 +20,7 @@ const orderLimit = rateLimit("orders", 5, 60, byUser);
 export const ordersRouter = Router();
 
 ordersRouter.post("/orders", requireUser, orderLimit, async (req, res) => {
-  const { eventId, email, name, country, zipcode } = parse(checkoutBody, req.body, "checkout details");
+  const { eventId, email, name, country, zipcode } = parse(checkoutSchema, req.body, "checkout details");
   const result = await startCheckout({
     userId: currentUser(res).id,
     eventId,

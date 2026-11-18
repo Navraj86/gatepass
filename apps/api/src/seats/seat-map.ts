@@ -1,6 +1,7 @@
+import type { SeatChange, SeatState } from "@gatepass/shared";
 import { pool } from "../db/client.js";
 
-export type SeatState = "available" | "held" | "sold" | "blocked";
+export type { SeatChange, SeatState };
 
 /**
  * A seat's visible state is derived, never stored twice: a hold is an
@@ -42,8 +43,6 @@ export async function readSeatMap(eventId: string): Promise<SeatMapSeat[]> {
   );
   return rows;
 }
-
-export type SeatChange = { seatId: string; state: SeatState; heldUntil: string | null };
 
 export async function readSeatChanges(seatIds: string[]): Promise<SeatChange[]> {
   const { rows } = await pool.query<{ seatId: string; state: SeatState; heldUntil: Date | null }>(
