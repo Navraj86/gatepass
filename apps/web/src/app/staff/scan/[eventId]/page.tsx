@@ -16,28 +16,44 @@ type Logged = { id: number; at: Date; code: string; scan: ScanResult };
 const SHOW_MS = 1800;
 const REPEAT_MS = 4000;
 
-function describe(scan: ScanResult): { title: string; detail: string; ok: boolean; tone: string } {
+function describe(scan: ScanResult): { title: string; detail: string; who?: string; ok: boolean; tone: string } {
   switch (scan.result) {
     case "valid":
       return {
         ok: true,
-        tone: "bg-ok",
+        tone: "bg-accent text-accent-ink",
         title: "Valid",
-        detail: `${scan.seat.sectionName}, row ${scan.seat.rowLabel}, seat ${scan.seat.seatNumber} · ${scan.holderName}`,
+        detail: `${scan.seat.sectionName}, row ${scan.seat.rowLabel}, seat ${scan.seat.seatNumber}`,
+        who: scan.holderName,
       };
     case "duplicate":
       return {
         ok: false,
-        tone: "bg-warn",
+        tone: "bg-accent-2 text-accent-2-ink",
         title: "Already scanned",
         detail: `${formatDateTime(scan.scannedAt)} by ${scan.scannedByName}`,
       };
     case "refunded":
-      return { ok: false, tone: "bg-bad", title: "Refunded", detail: "This ticket was refunded and is void." };
+      return {
+        ok: false,
+        tone: "bg-error text-paper",
+        title: "Refunded",
+        detail: "This ticket was refunded and is void.",
+      };
     case "wrong_event":
-      return { ok: false, tone: "bg-bad", title: "Wrong event", detail: `This ticket is for ${scan.eventTitle}.` };
+      return {
+        ok: false,
+        tone: "bg-error text-paper",
+        title: "Wrong event",
+        detail: `This ticket is for ${scan.eventTitle}.`,
+      };
     default:
-      return { ok: false, tone: "bg-bad", title: "Not a ticket", detail: "This code is not a Gatepass ticket." };
+      return {
+        ok: false,
+        tone: "bg-error text-paper",
+        title: "Not a ticket",
+        detail: "This code is not a Gatepass ticket.",
+      };
   }
 }
 
@@ -95,18 +111,18 @@ function Scanner({ eventId }: { eventId: string }) {
   const shown = showing ? describe(showing.scan) : undefined;
 
   return (
-    <div className="mx-auto grid max-w-md gap-4">
-      <div className="flex items-baseline justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">{event?.title ?? "Scanner"}</h1>
-          <Link href="/staff" className="text-sm text-muted">
+    <div className="mx-auto grid max-w-xl grid-cols-[minmax(0,1fr)] gap-5">
+      <div className="bar-top flex items-end justify-between gap-4 pt-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl">{event?.title ?? "Scanner"}</h1>
+          <Link href="/staff" className="link label mt-2 inline-flex min-h-11 items-center text-md">
             Change event
           </Link>
         </div>
         {event ? (
-          <p className="text-right text-sm">
-            <span className="text-2xl font-semibold tabular-nums">{event.checkedIn}</span>
-            <span className="text-muted"> / {event.validTickets} in</span>
+          <p className="shrink-0 text-right">
+            <span className="figure block text-4xl">{event.checkedIn}</span>
+            <span className="label text-ink-2">of {event.validTickets} in</span>
           </p>
         ) : null}
       </div>
@@ -114,7 +130,7 @@ function Scanner({ eventId }: { eventId: string }) {
       <Camera onCode={scan} paused={Boolean(showing)} />
 
       <form
-        className="flex gap-2"
+        className="grid grid-cols-[minmax(0,1fr)_auto] gap-2"
         onSubmit={(e) => {
           e.preventDefault();
           if (manual.trim()) {
@@ -129,7 +145,7 @@ function Scanner({ eventId }: { eventId: string }) {
           autoCapitalize="characters"
           autoComplete="off"
           spellCheck={false}
-          className="font-mono"
+          className="font-outlier tabular-nums"
           value={manual}
           onChange={(e) => setManual(e.target.value)}
         />
@@ -141,17 +157,18 @@ function Scanner({ eventId }: { eventId: string }) {
 
       {log.length > 0 ? (
         <section>
-          <h2 className="mb-2 text-sm font-medium text-muted">Last scans</h2>
-          <ul className="divide-y divide-line rounded-2xl border border-line bg-surface text-sm">
+          <h2 className="mb-3 text-lg">Last scans</h2>
+          <ul className="bar-top">
             {log.map((entry) => {
               const d = describe(entry.scan);
               return (
-                <li key={entry.id} className="flex items-center gap-3 px-3 py-2">
-                  <span className={cx("size-2.5 shrink-0 rounded-full", d.tone)} />
-                  <span className="min-w-0 flex-1 truncate">
-                    <span className="font-medium">{d.title}</span> <span className="text-muted">{d.detail}</span>
+                <li key={entry.id} className="flex items-center gap-3 border-b border-b-rule py-2.5">
+                  <span className={cx("label w-28 shrink-0 px-2 py-0.5 text-center", d.tone)}>{d.title}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-ink-2">
+                    {d.detail}
+                    {d.who ? `, ${d.who}` : ""}
                   </span>
-                  <span className="text-xs text-muted tabular-nums">
+                  <span className="label tabular-nums text-ink-2">
                     {entry.at.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" })}
                   </span>
                 </li>
@@ -166,13 +183,15 @@ function Scanner({ eventId }: { eventId: string }) {
           type="button"
           aria-live="assertive"
           className={cx(
-            "fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 p-8 text-center text-white",
+            "verdict fixed inset-0 z-(--z-modal) flex flex-col items-start justify-end gap-4 p-6 text-left sm:p-12",
             shown.tone,
           )}
           onClick={() => setShowing(undefined)}
         >
-          <span className="text-5xl font-bold">{shown.title}</span>
-          <span className="max-w-sm text-lg">{shown.detail}</span>
+          <span className="wordmark text-[clamp(3rem,14vw,9rem)]">{shown.title}</span>
+          <span className="figure max-w-2xl text-2xl sm:text-3xl">{shown.detail}</span>
+          {shown.who ? <span className="label text-xl">{shown.who}</span> : null}
+          <span className="label mt-6 whitespace-nowrap text-md">Tap to scan the next ticket</span>
         </button>
       ) : null}
     </div>

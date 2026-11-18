@@ -5,26 +5,27 @@ const cx = (...classes: (string | false | null | undefined)[]) => classes.filter
 
 type Variant = "primary" | "secondary" | "danger" | "ghost";
 
-const variants: Record<Variant, string> = {
-  primary: "bg-accent text-accent-ink hover:opacity-90",
-  secondary: "bg-surface text-ink border border-line hover:bg-canvas",
-  danger: "bg-surface text-bad border border-line hover:bg-canvas",
-  ghost: "text-ink hover:bg-surface",
-};
-
-const buttonBase =
-  "inline-flex items-center justify-center gap-2 rounded-lg px-4 h-10 text-sm font-medium transition disabled:opacity-50 disabled:pointer-events-none";
+const buttonClass = (variant: Variant, small?: boolean, className?: string) =>
+  cx("btn", `btn--${variant}`, small && "btn--small", className);
 
 export function Button({
   variant = "primary",
+  small,
   className,
   busy,
   children,
+  type = "button",
   ...props
-}: ComponentProps<"button"> & { variant?: Variant; busy?: boolean }) {
+}: ComponentProps<"button"> & { variant?: Variant; busy?: boolean; small?: boolean }) {
   return (
-    <button className={cx(buttonBase, variants[variant], className)} disabled={busy || props.disabled} {...props}>
-      {busy ? <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : null}
+    <button
+      type={type}
+      className={buttonClass(variant, small, className)}
+      disabled={busy || props.disabled}
+      aria-busy={busy || undefined}
+      {...props}
+    >
+      {busy ? <span aria-hidden className="spinner keep-motion" /> : null}
       {children}
     </button>
   );
@@ -32,14 +33,16 @@ export function Button({
 
 export function ButtonLink({
   variant = "primary",
+  small,
   className,
   ...props
-}: ComponentProps<typeof Link> & { variant?: Variant }) {
-  return <Link className={cx(buttonBase, variants[variant], className)} {...props} />;
+}: ComponentProps<typeof Link> & { variant?: Variant; small?: boolean }) {
+  return <Link className={buttonClass(variant, small, className)} {...props} />;
 }
 
+/** A well under the ink bar: the one container recipe for panels. */
 export function Card({ className, ...props }: ComponentProps<"div">) {
-  return <div className={cx("rounded-2xl border border-line bg-surface p-5", className)} {...props} />;
+  return <div className={cx("bar-top bg-paper-2 p-5 sm:p-6", className)} {...props} />;
 }
 
 export function Field({
@@ -55,39 +58,38 @@ export function Field({
 }) {
   return (
     // biome-ignore lint/a11y/noLabelWithoutControl: the control is passed as children
-    <label className="grid gap-1.5 text-sm">
-      <span className="font-medium">{label}</span>
+    <label className="grid gap-1.5">
+      <span className="label text-ink">{label}</span>
       {children}
-      {error ? <span className="text-bad">{error}</span> : hint ? <span className="text-muted">{hint}</span> : null}
+      <span className={cx("min-h-[1lh] text-sm", error ? "font-semibold text-error" : "text-muted")}>
+        {error ?? hint ?? ""}
+      </span>
     </label>
   );
 }
 
-const inputClass =
-  "h-10 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink placeholder:text-muted focus:border-accent focus:outline-none";
-
 export function Input({ className, ...props }: ComponentProps<"input">) {
-  return <input className={cx(inputClass, className)} {...props} />;
+  return <input className={cx("input", className)} {...props} />;
 }
 
 export function Select({ className, ...props }: ComponentProps<"select">) {
-  return <select className={cx(inputClass, className)} {...props} />;
+  return <select className={cx("input", className)} {...props} />;
 }
 
 export function Textarea({ className, ...props }: ComponentProps<"textarea">) {
-  return <textarea className={cx(inputClass, "h-auto min-h-24 py-2", className)} {...props} />;
+  return <textarea className={cx("input", className)} {...props} />;
 }
 
 export function Notice({ tone = "info", children }: { tone?: "info" | "error" | "ok"; children: ReactNode }) {
   const tones = {
-    info: "border-line bg-surface text-ink",
-    error: "border-bad/30 bg-bad/10 text-bad",
-    ok: "border-ok/30 bg-ok/10 text-ok",
+    info: "border-ink text-ink",
+    error: "border-error text-error font-semibold",
+    ok: "border-success text-ink",
   };
   return (
     <div
       role={tone === "error" ? "alert" : "status"}
-      className={cx("rounded-lg border px-3 py-2 text-sm", tones[tone])}
+      className={cx("border-l-4 bg-paper-2 px-4 py-3 text-sm", tones[tone])}
     >
       {children}
     </div>
@@ -95,24 +97,24 @@ export function Notice({ tone = "info", children }: { tone?: "info" | "error" | 
 }
 
 const badgeTones: Record<string, string> = {
-  paid: "bg-ok/15 text-ok",
-  valid: "bg-ok/15 text-ok",
-  published: "bg-ok/15 text-ok",
-  pending: "bg-warn/15 text-warn",
-  draft: "bg-warn/15 text-warn",
-  refunding: "bg-warn/15 text-warn",
-  refunded: "bg-muted/15 text-muted",
-  cancelled: "bg-muted/15 text-muted",
-  expired: "bg-muted/15 text-muted",
-  failed: "bg-bad/15 text-bad",
+  paid: "pass-1",
+  valid: "pass-1",
+  published: "pass-1",
+  pending: "pass-2",
+  draft: "pass-2",
+  refunding: "pass-2",
+  refunded: "bg-paper-3 text-ink",
+  cancelled: "bg-paper-3 text-ink",
+  expired: "bg-paper-3 text-ink",
+  failed: "bg-error text-paper",
 };
 
 export function Badge({ status }: { status: string }) {
   return (
     <span
       className={cx(
-        "inline-flex rounded-full px-2 py-0.5 text-xs font-medium capitalize",
-        badgeTones[status] ?? "bg-line text-ink",
+        "label inline-flex px-2 py-0.5 first-letter:uppercase",
+        badgeTones[status] ?? "bg-paper-3 text-ink",
       )}
     >
       {status}
@@ -122,10 +124,10 @@ export function Badge({ status }: { status: string }) {
 
 export function PageTitle({ title, subtitle, action }: { title: string; subtitle?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
-        {subtitle ? <p className="mt-1 text-muted">{subtitle}</p> : null}
+    <div className="mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+      <div className="min-w-0">
+        <h1 className="text-2xl sm:text-3xl">{title}</h1>
+        {subtitle ? <p className="mt-2 max-w-[60ch] text-muted">{subtitle}</p> : null}
       </div>
       {action}
     </div>
@@ -134,8 +136,8 @@ export function PageTitle({ title, subtitle, action }: { title: string; subtitle
 
 export function Spinner({ label = "Loading" }: { label?: string }) {
   return (
-    <div className="flex items-center gap-2 py-10 text-muted" role="status">
-      <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+    <div className="flex items-center gap-3 py-10 text-muted" role="status">
+      <span aria-hidden className="spinner keep-motion" />
       {label}
     </div>
   );

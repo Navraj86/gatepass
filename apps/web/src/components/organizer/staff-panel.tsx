@@ -57,23 +57,24 @@ export function StaffPanel({ eventId }: { eventId: string }) {
 
   return (
     <Card>
-      <h2 className="text-lg font-semibold">Door staff</h2>
-      <p className="mt-1 text-sm text-muted">Assigned staff can scan tickets for this event.</p>
+      <h2 className="text-2xl">Door staff</h2>
+      <p className="mt-2 text-ink-2">Assigned staff can scan tickets for this event.</p>
       {staff.length > 0 ? (
-        <ul className="mt-3 divide-y divide-line rounded-xl border border-line">
+        <ul className="mt-4 divide-y divide-rule border-y-4 border-y-ink">
           {staff.map((s) => (
-            <li key={s.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
-              <span>
-                <span className="font-medium">{s.name}</span> <span className="text-muted">{s.email}</span>
+            <li key={s.id} className="flex items-center justify-between gap-3 py-3">
+              <span className="min-w-0">
+                <span className="block font-semibold">{s.name}</span>
+                <span className="block truncate text-sm text-ink-2">{s.email}</span>
               </span>
-              <Button variant="danger" className="h-8 px-3" onClick={() => unassign(s.id)}>
+              <Button variant="danger" small onClick={() => unassign(s.id)}>
                 Remove
               </Button>
             </li>
           ))}
         </ul>
       ) : null}
-      <form className="mt-4 flex gap-2" onSubmit={assign} noValidate>
+      <form className="mt-5 grid grid-cols-[minmax(0,1fr)_auto] gap-2" onSubmit={assign} noValidate>
         <Input
           type="email"
           aria-label="Staff email"

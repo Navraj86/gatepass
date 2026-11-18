@@ -75,26 +75,25 @@ export function SectionsEditor({
   return (
     <Card>
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-lg font-semibold">Sections</h2>
-        <span className="text-sm text-muted">
+        <h2 className="text-2xl">Sections</h2>
+        <span className="label tabular-nums text-md text-ink-2">
           {totalSeats.toLocaleString()} / {MAX_SEATS_PER_EVENT.toLocaleString()} seats
         </span>
       </div>
 
       {sections.length === 0 ? (
-        <p className="mt-2 text-sm text-muted">No sections yet. Add the one closest to the stage first.</p>
+        <p className="mt-3 text-ink-2">No sections yet. Add the one closest to the stage first.</p>
       ) : (
-        <ul className="mt-3 divide-y divide-line rounded-xl border border-line">
+        <ul className="mt-4 divide-y divide-rule border-y-4 border-y-ink">
           {sections.map((s) => (
-            <li key={s.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
-              <span>
-                <span className="font-medium">{s.name}</span>
-                <span className="text-muted">
-                  {" "}
-                  · rows {s.firstRow} to {s.lastRow} · {s.seatCount} seats · {formatMoney(s.priceMinor, currency)}
+            <li key={s.id} className="flex items-center justify-between gap-3 py-3">
+              <span className="min-w-0">
+                <span className="block font-semibold">{s.name}</span>
+                <span className="label block tabular-nums text-ink-2">
+                  Rows {s.firstRow} to {s.lastRow}, {s.seatCount} seats, {formatMoney(s.priceMinor, currency)}
                 </span>
               </span>
-              <Button variant="danger" className="h-8 px-3" onClick={() => remove(s.id)}>
+              <Button variant="danger" small onClick={() => remove(s.id)}>
                 Remove
               </Button>
             </li>
@@ -102,8 +101,8 @@ export function SectionsEditor({
         </ul>
       )}
 
-      <form className="mt-5 grid gap-3" onSubmit={add} noValidate>
-        <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
+      <form className="mt-6 grid gap-2" onSubmit={add} noValidate>
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
           <Field label="Section name" error={errors.name}>
             <Input name="name" placeholder="Front" />
           </Field>
@@ -138,7 +137,7 @@ export function SectionsEditor({
           <Button type="submit" variant="secondary" busy={busy}>
             Add section
           </Button>
-          <span className="text-sm text-muted">Adds {adding.toLocaleString()} seats</span>
+          <span className="label tabular-nums text-md text-ink-2">Adds {adding.toLocaleString()} seats</span>
         </div>
       </form>
     </Card>

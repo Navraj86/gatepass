@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { OnSaleLabel } from "@/components/on-sale-label";
-import { formatDateTime, formatMoney } from "@/lib/format";
+import { cx } from "@/components/ui";
+import { formatDay, formatMoney, formatTime } from "@/lib/format";
 import { serverApi } from "@/lib/server-api";
 import type { PublicEvent } from "@/lib/types";
 
@@ -11,39 +12,64 @@ export default async function HomePage() {
   const events = data?.events ?? [];
 
   return (
-    <div>
-      <section className="mb-10 max-w-2xl">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Pick your seat before anyone else does.</h1>
-        <p className="mt-3 text-muted">
-          Watch seats change live, hold up to six for ten minutes, and pay with a QR ticket in your inbox. Every seat is
-          sold once.
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-10 sm:gap-14">
+      <section aria-labelledby="pick" className="grid items-end gap-x-8 gap-y-4 lg:grid-cols-12">
+        <h1 id="pick" className="text-display-s lg:col-span-8">
+          Pick your seat before anyone else does.
+        </h1>
+        <p className="lead text-ink-2 lg:col-span-4 lg:pb-2">
+          Live seat maps, ten-minute holds, and every seat sold once.
         </p>
       </section>
 
-      {events.length === 0 ? (
-        <p className="text-muted">No events on sale right now.</p>
-      ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {events.map((event) => (
-            <li key={event.id}>
-              <Link
-                href={`/events/${event.id}`}
-                className="group block h-full rounded-2xl border border-line bg-surface p-5 transition hover:border-accent"
-              >
-                <OnSaleLabel saleStartsAt={event.saleStartsAt} />
-                <h2 className="mt-3 text-lg font-semibold tracking-tight group-hover:text-accent">{event.title}</h2>
-                <p className="mt-1 text-sm text-muted">{event.venue}</p>
-                <p className="mt-1 text-sm text-muted">{formatDateTime(event.startsAt)}</p>
-                {event.fromPriceMinor != null ? (
-                  <p className="mt-4 text-sm">
-                    From <span className="font-semibold">{formatMoney(event.fromPriceMinor, event.currency)}</span>
-                  </p>
-                ) : null}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      <section aria-labelledby="on-sale">
+        <h2 id="on-sale" className="visually-hidden">
+          Events
+        </h2>
+        {events.length === 0 ? (
+          <p className="bar-top pt-6 text-lead text-muted">No events on sale right now.</p>
+        ) : (
+          <ol className="bar-top">
+            {events.map((event, i) => (
+              <li key={event.id} className="border-b border-b-rule">
+                <Link
+                  href={`/events/${event.id}`}
+                  className={cx(
+                    "row-link grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-6 gap-y-2 py-5 md:grid-cols-12 md:gap-x-8",
+                    i === 0 && "md:py-8",
+                  )}
+                >
+                  <span className="label col-span-2 text-ink-2 md:col-span-2 md:text-md">
+                    <time dateTime={event.startsAt}>
+                      {formatDay(event.startsAt)}
+                      <br className="hidden md:block" />
+                      <span className="md:hidden">, </span>
+                      {formatTime(event.startsAt)}
+                    </time>
+                  </span>
+                  <div className="col-span-2 min-w-0 md:col-span-6">
+                    <h3 className={cx("max-w-none", i === 0 ? "text-section" : "text-title")}>{event.title}</h3>
+                    <span className="mt-1 block text-ink-2">{event.venue}</span>
+                  </div>
+                  <span className="md:col-span-2 md:text-right">
+                    {event.fromPriceMinor != null ? (
+                      <>
+                        <span className="label block text-ink-2">From</span>
+                        <span className="figure block text-xl md:text-2xl">
+                          {formatMoney(event.fromPriceMinor, event.currency)}
+                        </span>
+                      </>
+                    ) : null}
+                  </span>
+                  <span className="justify-self-end md:col-span-2">
+                    <OnSaleLabel saleStartsAt={event.saleStartsAt} />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
     </div>
   );
 }

@@ -1,71 +1,380 @@
+/* Hallmark · shape: Index (/), Counter (/events/[id]), app screens in the kept shell · genre: playful · theme: Overprint (deal 1/3, seed reserved-seat-ticketing-live-music-0718·34b55456·2026-11-18·r0) · redesign: full
+ * hero: Index (/), Counter (/events/[id]) · nav: slab · footer: colophon · imagery: the product (the live seat map, the ticket stub) · signature: the seat map, open seats teal, selected ink, yours orange, taken grey, a seat taken live flashes orange · overprint: newsprint, toned down
+ * axes: light/grotesk-heavy/cool · posture: full-palette · contrast: pass · fold: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S5 R4 V4 · weakest: E, the first pass read as funky to the owner; the wide face now sets only page titles and the wordmark, headings, prices and counts are Archivo, and the overlapping bill became a plain facts row */
+/* Hallmark · waive 23 · teal fills the open seats of the 2,000-seat map · open seats are the state a buyer hunts for, printed in the first pass */
+/* Hallmark · waive 82 · the seat map draws one mark per real seat · every mark is a seat a buyer can hover and hold */
+/* Hallmark · waive 39b · price tier toggles stand three lines tall · each tier shows its name, price and live seats left */
+/* Hallmark · waive 85 · the sign-in page closes on its own sign-in form · signing in is the whole job of that page */
+/* Hallmark · dropped dataset?.seatId · the seat-map click is the same toggle, now reading data-seat and data-clickable so hover tips reach taken seats */
+/* Hallmark · reworded "1999", "2000", "49min" · seat counts print with thousands separators and the sale countdown ticks live, so the figures move */
+/* Hallmark · waive 44c · the hero is a short bill with the listing or the live map starting under it · on a box office the list and the map are the first screen */
+/* Hallmark · waive 79 · the space under the short hero is the listing and the seat map, not air · the booking starts on the first screen */
+/* Hallmark · motion: the theme keeps still; the user asked for smoother and interactive, so motion is state only (seat flash, selection tick, tier focus on click, hold drain), never a reveal */
 @import "tailwindcss";
+@import "./tokens.css";
+@import "./base.css" layer(base);
 
-@theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+@layer components {
+  .frame {
+    width: 100%;
+    max-width: var(--container);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
 
-  --color-ink: var(--ink);
-  --color-muted: var(--muted);
-  --color-line: var(--line);
-  --color-surface: var(--surface);
-  --color-canvas: var(--canvas);
-  --color-accent: var(--accent);
-  --color-accent-ink: var(--accent-ink);
-  --color-ok: var(--ok);
-  --color-bad: var(--bad);
-  --color-warn: var(--warn);
-}
+  /* Labels, table heads, small print: Archivo Narrow, sentence case, untracked. */
+  .label {
+    font-family: var(--font-outlier);
+    font-weight: 600;
+    font-size: var(--text-sm);
+    line-height: 1.3;
+  }
 
-:root {
-  --canvas: #f6f5f2;
-  --surface: #ffffff;
-  --ink: #16151a;
-  --muted: #6b6873;
-  --line: #e4e1da;
-  --accent: #5b3df5;
-  --accent-ink: #ffffff;
-  --ok: #138a4f;
-  --bad: #c62f2f;
-  --warn: #b36b00;
+  /* A title inside a row or on a ticket: the body face, heavy, never the poster face. */
+  .display {
+    font-family: var(--font-body);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    overflow-wrap: break-word;
+    min-width: 0;
+    text-wrap: balance;
+  }
 
-  /* Seat map */
-  --seat-available: #cfc7fb;
-  --seat-held: #d9d6cf;
-  --seat-sold: #8d8a93;
-  --seat-mine: #5b3df5;
-  --seat-selected: #16151a;
-  color-scheme: light;
-}
+  /* The wordmark is the one place the wide poster face appears outside a page title. */
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-stretch: 130%;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-display);
+    line-height: 1;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --canvas: #121116;
-    --surface: #1b1a20;
-    --ink: #f2f0ea;
-    --muted: #9c98a6;
-    --line: #2d2b34;
-    --accent: #8c78ff;
-    --accent-ink: #120f24;
-    --ok: #3cc683;
-    --bad: #ff6b6b;
-    --warn: #f0a63a;
+  /* Focus on the ink nav: the first pass clears 3:1 against ink where the focus teal does not. */
+  .band-ink :focus-visible {
+    outline-color: var(--color-accent);
+  }
 
-    --seat-available: #4a3f8c;
-    --seat-held: #34323a;
-    --seat-sold: #5c5964;
-    --seat-mine: #8c78ff;
-    --seat-selected: #f2f0ea;
-    color-scheme: dark;
+  .bar-top {
+    border-top: var(--rule-bar) solid var(--color-ink);
+  }
+
+  /* Prices, counts and times: plain and legible, in tabular figures. */
+  .figure {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
+
+  /* The two passes: flat fills under ink type that print moss where they cross. */
+  .pass-1 {
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+    mix-blend-mode: var(--blend);
+  }
+  .pass-2 {
+    background: var(--color-accent-2);
+    color: var(--color-accent-2-ink);
+    mix-blend-mode: var(--blend);
+  }
+
+  .grain {
+    position: relative;
+    isolation: isolate;
+  }
+  .grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: var(--texture-opacity);
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 9 -4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E")
+      0 0 / 200px;
+  }
+
+  /* Controls: the press does not tween. Hover pulls the primary through the other pass at once. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+    min-height: 44px;
+    padding: 0 var(--space-lg);
+    border: 0;
+    border-radius: 0;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: var(--text-md);
+    line-height: 1;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform var(--dur-micro) var(--ease-out);
+  }
+  .btn:active {
+    transform: translateY(1px);
+  }
+  .btn:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .btn[aria-busy="true"] {
+    cursor: progress;
+  }
+  .btn--primary {
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
+  .btn--primary:hover:not(:disabled) {
+    background: var(--color-accent-2);
+    color: var(--color-accent-2-ink);
+  }
+  .btn--primary:active:not(:disabled) {
+    background: color-mix(in oklab, var(--color-accent-2) 82%, var(--color-ink));
+  }
+  .btn--secondary {
+    background: transparent;
+    color: var(--color-ink);
+    box-shadow: inset 0 0 0 2px var(--color-ink);
+  }
+  .btn--secondary:hover:not(:disabled) {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+  .btn--secondary:active:not(:disabled) {
+    background: var(--color-ink-2);
+  }
+  .btn--danger {
+    background: transparent;
+    color: var(--color-error);
+    box-shadow: inset 0 0 0 2px var(--color-error);
+  }
+  .btn--danger:hover:not(:disabled) {
+    background: var(--color-error);
+    color: var(--color-paper);
+  }
+  .btn--ghost {
+    background: transparent;
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-decoration-color: var(--color-accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.25em;
+  }
+  .btn--ghost:hover:not(:disabled) {
+    text-decoration-color: var(--color-ink);
+  }
+  .btn--small {
+    min-height: 36px;
+    padding: 0 var(--space-md);
+    font-size: var(--text-sm);
+  }
+
+  /* Links in running text: ink with a 2px pass-1 underline that turns ink on hover. */
+  .link {
+    color: var(--color-ink);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: var(--color-accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.2em;
+  }
+  .link:hover {
+    text-decoration-color: var(--color-ink);
+  }
+
+  /* Inputs: square, in a 2px ink outline; the focus ring is an outline, never a border change. */
+  .input {
+    width: 100%;
+    min-height: 44px;
+    padding: 0 var(--space-sm);
+    border: 2px solid var(--color-ink);
+    border-radius: 0;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-size: var(--text-md);
+  }
+  .input::placeholder {
+    color: var(--color-muted);
+  }
+  .input:hover:not(:disabled) {
+    background: var(--color-paper-2);
+  }
+  .input:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+  .input:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  .input[aria-invalid="true"] {
+    border-color: var(--color-error);
+  }
+  textarea.input {
+    min-height: 96px;
+    padding-block: var(--space-xs);
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 700ms linear infinite;
+  }
+
+  /* The seat map. Each seat is a square in one pass; state changes are the only motion. */
+  .seat {
+    transform-box: fill-box;
+    transform-origin: center;
+    transition:
+      transform var(--dur-micro) var(--ease-out),
+      opacity var(--dur-short) var(--ease-out);
+  }
+  .seat--available {
+    fill: var(--color-accent);
+  }
+  .seat--selected {
+    fill: var(--color-ink);
+  }
+  .seat.seat--selected {
+    transform: scale(1.25);
+  }
+  .seat--mine {
+    fill: var(--color-accent-2);
+  }
+  .seat--held {
+    fill: var(--color-rule);
+  }
+  .seat--sold,
+  .seat--blocked {
+    fill: var(--color-taken);
+  }
+  .seat--clickable {
+    cursor: pointer;
+  }
+  /* Hover rings the seat in ink; it never borrows the colour of another state. */
+  .seat--clickable:hover {
+    stroke: var(--color-ink);
+    stroke-width: 2px;
+  }
+  .seat--dim {
+    opacity: 0.16;
+  }
+  .seat--flash {
+    animation: seat-taken 1100ms var(--ease-out) both;
+  }
+
+  .map-text {
+    font-family: var(--font-outlier);
+    font-weight: 600;
+  }
+
+  .seat-tip {
+    position: absolute;
+    z-index: var(--z-tooltip);
+    pointer-events: none;
+    transform: translate(-50%, calc(-100% - 10px));
+    padding: var(--space-2xs) var(--space-xs);
+    background: var(--color-ink);
+    color: var(--color-paper);
+    font-family: var(--font-outlier);
+    font-weight: 600;
+    font-size: var(--text-sm);
+    white-space: nowrap;
+  }
+
+  .hold-bar {
+    height: var(--rule-bar);
+    background: var(--color-paper-3);
+    overflow: hidden;
+  }
+  .hold-bar > span {
+    display: block;
+    height: 100%;
+    transform-origin: left;
+    transition: transform 1s linear;
+  }
+
+  .tier {
+    transition: transform var(--dur-micro) var(--ease-out);
+  }
+  .tier:hover,
+  .tier:focus-visible,
+  .tier[aria-pressed="true"] {
+    transform: translateY(-2px);
+  }
+  .tier:active {
+    transform: translateY(0);
+  }
+
+  /* The scan verdict: one ink field fills the screen. */
+  .verdict {
+    animation: verdict-in var(--dur-short) var(--ease-out) both;
+  }
+
+  .row-link {
+    transition: background-color var(--dur-micro) var(--ease-out);
+  }
+  .row-link:hover {
+    background: var(--color-paper-2);
+  }
+  .row-link:hover .row-status {
+    background: var(--color-accent-2);
   }
 }
 
-body {
-  background: var(--canvas);
-  color: var(--ink);
-  -webkit-font-smoothing: antialiased;
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+@keyframes seat-taken {
+  0% {
+    fill: var(--color-accent-2);
+    transform: scale(1.7);
+  }
+  45% {
+    fill: var(--color-accent-2);
+    transform: scale(1);
+  }
+}
+
+@keyframes verdict-in {
+  from {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seat,
+  .tier,
+  .btn,
+  .row-link,
+  .hold-bar > span {
+    transition: none;
+  }
+  .seat--flash,
+  .verdict {
+    animation: none;
+  }
+  .spinner {
+    animation-duration: 1.4s;
+  }
 }

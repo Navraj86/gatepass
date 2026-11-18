@@ -18,28 +18,27 @@ export function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-20 border-b border-line bg-canvas/85 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4">
-        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-          <span aria-hidden className="grid size-7 place-items-center rounded-lg bg-accent text-accent-ink">
-            <svg viewBox="0 0 20 20" className="size-4" fill="currentColor" aria-hidden="true">
-              <path d="M3 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4V5Z" />
-            </svg>
-          </span>
+    <header className="band-ink sticky top-0 z-(--z-sticky-nav) bg-ink text-on-ink">
+      <div className="frame flex h-16 items-stretch gap-6">
+        <Link href="/" aria-label="Gatepass, all events" className="wordmark flex items-center text-xl sm:text-2xl">
           Gatepass
         </Link>
-        <nav className="flex flex-1 items-center gap-1 overflow-x-auto text-sm">
+        <nav aria-label="Main" className="flex min-w-0 flex-1 items-stretch gap-1 overflow-x-auto">
           {links
             .filter((l) => l.show)
             .map((l) => {
-              const active = l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
+              const active =
+                l.href === "/" ? pathname === "/" || pathname.startsWith("/events") : pathname.startsWith(l.href);
               return (
                 <Link
                   key={l.href}
                   href={l.href}
+                  aria-current={active ? "page" : undefined}
                   className={cx(
-                    "whitespace-nowrap rounded-md px-2.5 py-1.5",
-                    active ? "bg-surface font-medium" : "text-muted hover:text-ink",
+                    "label flex items-center whitespace-nowrap border-b-4 px-3 pt-1 text-md",
+                    active
+                      ? "border-accent text-on-ink"
+                      : "border-transparent text-on-ink-muted hover:border-on-ink-muted hover:text-on-ink",
                   )}
                 >
                   {l.label}
@@ -47,26 +46,31 @@ export function Header() {
               );
             })}
         </nav>
-        {loading ? null : user ? (
-          <div className="flex items-center gap-3 text-sm">
-            <span className="hidden text-muted sm:inline">{user.name}</span>
-            <button
-              type="button"
-              className="text-muted hover:text-ink"
-              onClick={async () => {
-                await signOut();
-                router.push("/");
-                router.refresh();
-              }}
+        <div className="flex shrink-0 items-center gap-4">
+          {loading ? null : user ? (
+            <>
+              <span className="label hidden text-md text-on-ink-muted md:inline">{user.name}</span>
+              <button
+                type="button"
+                className="label min-h-11 text-md text-on-ink underline decoration-accent decoration-2 underline-offset-4 hover:decoration-on-ink"
+                onClick={async () => {
+                  await signOut();
+                  router.push("/");
+                  router.refresh();
+                }}
+              >
+                Sign out
+              </button>
+            </>
+          ) : (
+            <Link
+              href={`/login?next=${encodeURIComponent(pathname)}`}
+              className="label flex min-h-11 items-center text-md text-on-ink underline decoration-accent decoration-2 underline-offset-4 hover:decoration-on-ink"
             >
-              Sign out
-            </button>
-          </div>
-        ) : (
-          <Link href={`/login?next=${encodeURIComponent(pathname)}`} className="text-sm font-medium">
-            Sign in
-          </Link>
-        )}
+              Sign in
+            </Link>
+          )}
+        </div>
       </div>
     </header>
   );

@@ -58,9 +58,9 @@ export function OrdersTable({ eventId, onRefund }: { eventId: string; onRefund: 
   const pages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
 
   return (
-    <div className="rounded-2xl border border-line bg-surface">
-      <div className="flex flex-wrap items-center justify-between gap-3 p-5 pb-3">
-        <h2 className="text-lg font-semibold">Orders</h2>
+    <section className="min-w-0">
+      <div className="flex flex-wrap items-end justify-between gap-3 pb-4">
+        <h2 className="text-2xl">Orders</h2>
         <Select
           aria-label="Filter orders"
           className="w-40"
@@ -78,41 +78,43 @@ export function OrdersTable({ eventId, onRefund }: { eventId: string; onRefund: 
         </Select>
       </div>
       {error ? (
-        <div className="px-5 pb-3">
+        <div className="pb-3">
           <Notice tone="error">{error}</Notice>
         </div>
       ) : null}
-      <div className="overflow-x-auto">
+      <div className="bar-top overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <thead className="border-y border-line text-xs uppercase tracking-wide text-muted">
+          <thead className="label border-b border-b-rule text-ink-2">
             <tr>
-              <th className="px-5 py-2 font-medium">Buyer</th>
-              <th className="px-3 py-2 font-medium">Seats</th>
-              <th className="px-3 py-2 font-medium">Amount</th>
-              <th className="px-3 py-2 font-medium">Status</th>
-              <th className="px-3 py-2 font-medium">Placed</th>
-              <th className="px-5 py-2" />
+              <th className="whitespace-nowrap py-3 pr-3 font-semibold">Buyer</th>
+              <th className="whitespace-nowrap px-3 py-3 font-semibold">Seats</th>
+              <th className="whitespace-nowrap px-3 py-3 text-right font-semibold">Amount</th>
+              <th className="whitespace-nowrap px-3 py-3 font-semibold">Status</th>
+              <th className="whitespace-nowrap px-3 py-3 font-semibold">Placed</th>
+              <th className="py-3 pl-3">
+                <span className="visually-hidden">Actions</span>
+              </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-line">
+          <tbody className="divide-y divide-rule">
             {data?.orders.map((o) => (
               <tr key={o.id}>
-                <td className="px-5 py-2.5">
-                  <span className="font-medium">{o.buyerName}</span>
-                  <span className="block text-xs text-muted">{o.buyerEmail}</span>
+                <td className="py-3 pr-3">
+                  <span className="font-semibold">{o.buyerName}</span>
+                  <span className="block text-ink-2">{o.buyerEmail}</span>
                 </td>
-                <td className="px-3 py-2.5">
+                <td className="px-3 py-3 tabular-nums">
                   {o.seatCount}
-                  {o.scannedCount > 0 ? <span className="text-xs text-muted"> ({o.scannedCount} in)</span> : null}
+                  {o.scannedCount > 0 ? <span className="text-ink-2"> ({o.scannedCount} in)</span> : null}
                 </td>
-                <td className="px-3 py-2.5">{formatMoney(o.amountMinor, o.currency)}</td>
-                <td className="px-3 py-2.5">
+                <td className="px-3 py-3 text-right tabular-nums">{formatMoney(o.amountMinor, o.currency)}</td>
+                <td className="px-3 py-3">
                   <Badge status={o.status} />
                 </td>
-                <td className="whitespace-nowrap px-3 py-2.5 text-muted">{formatDateTime(o.createdAt)}</td>
-                <td className="px-5 py-2.5 text-right">
+                <td className="whitespace-nowrap px-3 py-3 text-ink-2">{formatDateTime(o.createdAt)}</td>
+                <td className="py-3 pl-3 text-right">
                   {o.status === "paid" && o.scannedCount === 0 ? (
-                    <Button variant="danger" className="h-8 px-3" busy={refunding === o.id} onClick={() => refund(o)}>
+                    <Button variant="danger" small busy={refunding === o.id} onClick={() => refund(o)}>
                       Refund
                     </Button>
                   ) : null}
@@ -121,20 +123,20 @@ export function OrdersTable({ eventId, onRefund }: { eventId: string; onRefund: 
             ))}
           </tbody>
         </table>
-        {data && data.orders.length === 0 ? <p className="px-5 py-6 text-sm text-muted">No orders yet.</p> : null}
+        {data && data.orders.length === 0 ? <p className="py-6 text-ink-2">No orders yet.</p> : null}
       </div>
-      <div className="flex items-center justify-between gap-3 border-t border-line px-5 py-3 text-sm text-muted">
-        <span>{data ? `${data.total} orders` : ""}</span>
-        <span className="flex items-center gap-2">
-          <Button variant="ghost" className="h-8 px-2" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+      <div className="label flex items-center justify-between gap-3 border-t border-t-rule py-2 text-md text-ink-2">
+        <span className="tabular-nums">{data ? `${data.total} orders` : ""}</span>
+        <span className="flex items-center gap-1 tabular-nums">
+          <Button variant="ghost" small disabled={page <= 1} onClick={() => setPage(page - 1)}>
             Previous
           </Button>
-          {page} / {pages}
-          <Button variant="ghost" className="h-8 px-2" disabled={page >= pages} onClick={() => setPage(page + 1)}>
+          {page} of {pages}
+          <Button variant="ghost" small disabled={page >= pages} onClick={() => setPage(page + 1)}>
             Next
           </Button>
         </span>
       </div>
-    </div>
+    </section>
   );
 }

@@ -45,18 +45,18 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
 
   const other = mode === "login" ? "/signup" : "/login";
   return (
-    <div className="mx-auto max-w-sm pt-6">
-      <h1 className="mb-1 text-2xl font-semibold tracking-tight">
-        {mode === "login" ? "Sign in" : "Create your account"}
-      </h1>
-      <p className="mb-6 text-sm text-muted">
-        {mode === "login" ? "New here? " : "Already have an account? "}
-        <Link className="font-medium text-accent" href={`${other}?next=${encodeURIComponent(next)}`}>
-          {mode === "login" ? "Create an account" : "Sign in"}
-        </Link>
-      </p>
-      <Card>
-        <form className="grid gap-4" onSubmit={onSubmit}>
+    <section className="grid grid-cols-[minmax(0,1fr)] items-start gap-x-8 gap-y-10 lg:grid-cols-12 lg:pt-6">
+      <div className="lg:col-span-5">
+        <h1 className="text-display-s">{mode === "login" ? "Sign in" : "Create your account"}</h1>
+        <p className="lead mt-5 text-ink-2">
+          {mode === "login" ? "New here? " : "Already have an account? "}
+          <Link className="link" href={`${other}?next=${encodeURIComponent(next)}`}>
+            {mode === "login" ? "Create an account" : "Sign in"}
+          </Link>
+        </p>
+      </div>
+      <Card className="lg:col-span-6 lg:col-start-7">
+        <form className="grid gap-2" onSubmit={onSubmit}>
           {mode === "signup" ? (
             <Field label="Name">
               <Input name="name" autoComplete="name" required maxLength={100} />
@@ -75,11 +75,11 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             />
           </Field>
           {error ? <Notice tone="error">{error}</Notice> : null}
-          <Button type="submit" busy={busy}>
+          <Button type="submit" busy={busy} className="mt-2">
             {mode === "login" ? "Sign in" : "Create account"}
           </Button>
         </form>
       </Card>
-    </div>
+    </section>
   );
 }

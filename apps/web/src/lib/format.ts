@@ -37,3 +37,29 @@ export function toLocalInput(iso: string | Date) {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+const day = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric" });
+const time = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" });
+
+/** "Sat, Dec 19" */
+export function formatDay(iso: string | Date) {
+  return day.format(new Date(iso));
+}
+
+/** "8:00 PM" */
+export function formatTime(iso: string | Date) {
+  return time.format(new Date(iso));
+}
+
+const monthDay = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
+const weekday = new Intl.DateTimeFormat("en-US", { weekday: "short" });
+
+/** "Dec 19" */
+export function formatMonthDay(iso: string | Date) {
+  return monthDay.format(new Date(iso));
+}
+
+/** "Sat" */
+export function formatWeekday(iso: string | Date) {
+  return weekday.format(new Date(iso));
+}

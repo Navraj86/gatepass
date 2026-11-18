@@ -1,10 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { cx } from "@/components/ui";
 import { formatCountdown, formatWait } from "@/lib/format";
 
-/** "On sale now", or a countdown that ticks down to the on-sale time. */
-export function OnSaleLabel({ saleStartsAt, onOpen }: { saleStartsAt: string; onOpen?: () => void }) {
+/** "On sale now" printed in the first pass, or a countdown that ticks down to the on-sale time. */
+export function OnSaleLabel({
+  saleStartsAt,
+  onOpen,
+  className,
+}: {
+  saleStartsAt: string;
+  onOpen?: () => void;
+  className?: string;
+}) {
   const opensAt = Date.parse(saleStartsAt);
   const [now, setNow] = useState<number | null>(null);
 
@@ -22,17 +31,12 @@ export function OnSaleLabel({ saleStartsAt, onOpen }: { saleStartsAt: string; on
     return () => clearInterval(timer);
   }, [opensAt, onOpen]);
 
-  if (now === null) return <span className="inline-block h-6" />;
+  const base = cx("label inline-flex items-center px-3 py-1.5 tabular-nums", className);
+  if (now === null) return <span className={cx(base, "invisible")}>On sale now</span>;
   const left = opensAt - now;
-  if (left <= 0) {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-ok/15 px-2.5 py-1 text-xs font-medium text-ok">
-        <span className="size-1.5 rounded-full bg-ok" /> On sale now
-      </span>
-    );
-  }
+  if (left <= 0) return <span className={cx(base, "row-status pass-1")}>On sale now</span>;
   return (
-    <span className="inline-flex rounded-full bg-warn/15 px-2.5 py-1 text-xs font-medium tabular-nums text-warn">
+    <span className={cx(base, "bg-ink text-on-ink")}>
       On sale in {left < 60 * 60 * 1000 ? formatCountdown(left) : formatWait(left)}
     </span>
   );

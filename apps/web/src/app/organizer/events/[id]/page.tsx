@@ -38,13 +38,13 @@ function EditEvent({ eventId }: { eventId: string }) {
   if (event.status !== "draft") {
     return (
       <>
-        <PageTitle title={event.title} subtitle={`${event.venue} · ${formatDateTime(event.startsAt)}`} />
+        <PageTitle title={event.title} subtitle={`${event.venue}, ${formatDateTime(event.startsAt)}`} />
         <Card className="grid max-w-xl gap-3">
-          <p className="text-sm">
+          <p>
             This event is <Badge status={event.status} />. Published events cannot be edited, so buyers always see the
             seats and prices they paid for.
           </p>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <ButtonLink href={`/organizer/events/${event.id}/sales`}>Sales and staff</ButtonLink>
             <ButtonLink href={`/events/${event.id}`} variant="secondary">
               Public page
@@ -87,9 +87,9 @@ function EditEvent({ eventId }: { eventId: string }) {
           <Notice tone="error">{error}</Notice>
         </div>
       ) : null}
-      <div className="grid items-start gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-8 lg:grid-cols-2">
         <Card>
-          <h2 className="mb-4 text-lg font-semibold">Details</h2>
+          <h2 className="mb-5 text-2xl">Details</h2>
           <EventForm
             event={event}
             submitLabel={saved ? "Saved" : "Save changes"}
@@ -103,8 +103,8 @@ function EditEvent({ eventId }: { eventId: string }) {
         </Card>
         <SectionsEditor eventId={eventId} currency={event.currency} sections={sections} onChange={load} />
       </div>
-      <p className="mt-6 text-sm text-muted">
-        <Link href="/organizer" className="text-accent">
+      <p className="mt-8">
+        <Link href="/organizer" className="link">
           Back to your events
         </Link>
       </p>

@@ -4,6 +4,7 @@ import { type SeatChange, type SeatMapSeat, type SeatState, visibleState } from 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type Live = { state: SeatState; heldUntil: string | null };
+const FLASH_MS = 1200;
 export type StreamStatus = "connecting" | "live" | "reconnecting";
 
 function toMap(seats: SeatMapSeat[]) {
@@ -19,6 +20,8 @@ export function useLiveSeats(eventId: string, initial: SeatMapSeat[]) {
   const [live, setLive] = useState(() => toMap(initial));
   const [status, setStatus] = useState<StreamStatus>("connecting");
   const [now, setNow] = useState(() => Date.now());
+  // Seats that someone just took, so the map can flash them once.
+  const [flashes, setFlashes] = useState<Set<string>>(() => new Set());
 
   const applySnapshot = useCallback((seats: SeatMapSeat[]) => setLive(toMap(seats)), []);
 
@@ -35,6 +38,17 @@ export function useLiveSeats(eventId: string, initial: SeatMapSeat[]) {
         for (const c of changes) next.set(c.seatId, { state: c.state, heldUntil: c.heldUntil });
         return next;
       });
+      const taken = changes.filter((c) => c.state !== "available").map((c) => c.seatId);
+      if (taken.length > 0) {
+        setFlashes((prev) => new Set([...prev, ...taken]));
+        setTimeout(() => {
+          setFlashes((prev) => {
+            const next = new Set(prev);
+            for (const id of taken) next.delete(id);
+            return next;
+          });
+        }, FLASH_MS);
+      }
     });
     // The browser reconnects by itself (the server sends retry: 3000) and gets a fresh snapshot.
     source.onerror = () => setStatus("reconnecting");
@@ -57,5 +71,5 @@ export function useLiveSeats(eventId: string, initial: SeatMapSeat[]) {
     [live, now],
   );
 
-  return { stateOf, status, applySnapshot, now };
+  return { stateOf, status, applySnapshot, now, flashes };
 }

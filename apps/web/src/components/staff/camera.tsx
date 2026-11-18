@@ -46,7 +46,7 @@ export function Camera({ onCode, paused }: { onCode: (code: string) => void; pau
 
   return (
     <div className="grid gap-2">
-      <div id={id} className="aspect-square w-full overflow-hidden rounded-2xl bg-black [&_video]:object-cover" />
+      <div id={id} className="aspect-square w-full overflow-hidden bg-ink [&_video]:object-cover" />
       {error ? <Notice tone="error">{error}</Notice> : null}
     </div>
   );

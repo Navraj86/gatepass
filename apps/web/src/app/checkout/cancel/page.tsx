@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { RequireUser } from "@/components/require-user";
-import { ButtonLink, Card, Spinner } from "@/components/ui";
+import { ButtonLink, Spinner } from "@/components/ui";
 import { api } from "@/lib/api";
 
 function Cancel({ orderId }: { orderId: string }) {
@@ -27,13 +27,13 @@ function Cancel({ orderId }: { orderId: string }) {
 
   if (!done) return <Spinner label="Releasing your seats" />;
   return (
-    <Card className="mx-auto max-w-md text-center">
-      <h1 className="text-xl font-semibold">Checkout cancelled</h1>
-      <p className="mt-2 text-sm text-muted">Your seats were released for other buyers. Nothing was charged.</p>
-      <ButtonLink className="mt-5" href={eventId ? `/events/${eventId}` : "/"}>
-        Back to the seat map
-      </ButtonLink>
-    </Card>
+    <div className="bar-top grid gap-x-8 gap-y-6 pt-8 lg:grid-cols-12">
+      <h1 className="text-display-s lg:col-span-7">Checkout cancelled</h1>
+      <div className="grid content-start justify-items-start gap-6 lg:col-span-5">
+        <p className="lead text-ink-2">Your seats were released for other buyers. Nothing was charged.</p>
+        <ButtonLink href={eventId ? `/events/${eventId}` : "/"}>Back to the seat map</ButtonLink>
+      </div>
+    </div>
   );
 }
 

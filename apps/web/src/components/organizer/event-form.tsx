@@ -62,7 +62,7 @@ export function EventForm({
   }
 
   return (
-    <form className="grid gap-4" onSubmit={handle} noValidate>
+    <form className="grid gap-2" onSubmit={handle} noValidate>
       <Field label="Title" error={errors.title}>
         <Input name="title" defaultValue={event?.title} placeholder="Friday Night Live" />
       </Field>

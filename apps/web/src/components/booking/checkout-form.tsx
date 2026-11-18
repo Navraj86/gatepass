@@ -58,14 +58,25 @@ export function CheckoutForm({
   }
 
   return (
-    <form className="mt-4 grid gap-3" onSubmit={onSubmit} noValidate>
+    <form className="mt-5 grid gap-2" onSubmit={onSubmit} noValidate>
       <Field label="Name" error={errors.name}>
-        <Input name="name" autoComplete="name" defaultValue={user?.name} />
+        <Input
+          name="name"
+          autoComplete="name"
+          defaultValue={user?.name}
+          aria-invalid={Boolean(errors.name) || undefined}
+        />
       </Field>
       <Field label="Email for tickets" error={errors.email}>
-        <Input name="email" type="email" autoComplete="email" defaultValue={user?.email} />
+        <Input
+          name="email"
+          type="email"
+          autoComplete="email"
+          defaultValue={user?.email}
+          aria-invalid={Boolean(errors.email) || undefined}
+        />
       </Field>
-      <div className="grid grid-cols-[1fr_120px] gap-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_120px] gap-3">
         <Field label="Country" error={errors.country}>
           <Select name="country" value={country} onChange={(e) => setCountry(e.target.value)}>
             {COUNTRIES.map(([code, name]) => (
@@ -76,7 +87,7 @@ export function CheckoutForm({
           </Select>
         </Field>
         <Field label="Postal code" error={errors.zipcode}>
-          <Input name="zipcode" autoComplete="postal-code" />
+          <Input name="zipcode" autoComplete="postal-code" aria-invalid={Boolean(errors.zipcode) || undefined} />
         </Field>
       </div>
       {error ? <Notice tone="error">{error}</Notice> : null}

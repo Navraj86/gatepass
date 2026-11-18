@@ -4,18 +4,18 @@ import { use, useCallback, useEffect, useState } from "react";
 import { OrdersTable } from "@/components/organizer/orders-table";
 import { StaffPanel } from "@/components/organizer/staff-panel";
 import { RequireUser } from "@/components/require-user";
-import { ButtonLink, Card, Notice, PageTitle, Spinner } from "@/components/ui";
+import { ButtonLink, Notice, PageTitle, Spinner } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { formatDateTime, formatMoney } from "@/lib/format";
 import type { EventStats, OrganizerEvent } from "@/lib/types";
 
 function Stat({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
-    <Card className="p-4">
-      <p className="text-xs uppercase tracking-wide text-muted">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
-      {detail ? <p className="text-xs text-muted">{detail}</p> : null}
-    </Card>
+    <div className="border-rule py-4 sm:border-l sm:px-6 sm:first:border-l-0 sm:first:pl-0">
+      <p className="label text-md text-ink-2">{label}</p>
+      <p className="figure mt-2 text-2xl lg:text-3xl">{value}</p>
+      {detail ? <p className="mt-1 text-sm text-ink-2">{detail}</p> : null}
+    </div>
   );
 }
 
@@ -58,14 +58,14 @@ function Sales({ eventId }: { eventId: string }) {
     <>
       <PageTitle
         title={event.title}
-        subtitle={`${event.venue} · ${formatDateTime(event.startsAt)}`}
+        subtitle={`${event.venue}, ${formatDateTime(event.startsAt)}`}
         action={
           <ButtonLink href={`/events/${event.id}`} variant="secondary">
             Live seat map
           </ButtonLink>
         }
       />
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="bar-top grid grid-cols-1 divide-y divide-rule sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4">
         <Stat
           label="Sold"
           value={`${stats.sold.toLocaleString()} / ${stats.totalSeats.toLocaleString()}`}
@@ -83,7 +83,7 @@ function Sales({ eventId }: { eventId: string }) {
           detail={pct(stats.checkedIn, stats.validTickets)}
         />
       </div>
-      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[2fr_1fr]">
+      <div className="mt-12 grid grid-cols-[minmax(0,1fr)] items-start gap-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <OrdersTable eventId={eventId} onRefund={loadStats} />
         <StaffPanel eventId={eventId} />
       </div>

@@ -9,3 +9,6 @@ infra/certs/
 load/run.json
 apps/api/spikes/
 .deployed-tag
+
+# Hallmark lint records and screenshots
+.hallmark/

@@ -62,13 +62,13 @@ export function BestAvailable({
   const [count, setCount] = useState(Math.min(2, max));
 
   return (
-    <div className="mt-4 grid gap-2 border-t border-line pt-4">
-      <span className="text-sm font-medium">Best available</span>
-      <div className="grid grid-cols-[1fr_72px] gap-2">
+    <div className="mt-6 grid gap-2 border-t border-rule pt-5">
+      <span className="label text-md">Best available</span>
+      <div className="grid grid-cols-[minmax(0,1fr)_80px] gap-2">
         <Select aria-label="Section" value={sectionId} onChange={(e) => setSectionId(e.target.value)}>
           {sections.map((s) => (
             <option key={s.id} value={s.id}>
-              {s.name} · {formatMoney(s.priceMinor)}
+              {s.name}, {formatMoney(s.priceMinor)}
             </option>
           ))}
         </Select>

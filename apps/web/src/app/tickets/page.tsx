@@ -42,37 +42,39 @@ function Tickets() {
     <>
       <PageTitle title="My tickets" subtitle="Show the QR code at the door. Each code works once." />
       {upcoming.length === 0 ? (
-        <p className="text-muted">
+        <p className="bar-top pt-5 text-ink-2">
           No tickets yet.{" "}
-          <Link href="/" className="text-accent">
+          <Link href="/" className="link">
             Find an event
           </Link>
           .
         </p>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-6 xl:grid-cols-2">
           {upcoming.map((t) => (
-            <TicketCard key={t.id} ticket={t} eventTitle={`${t.eventTitle} · ${formatDateTime(t.startsAt)}`} />
+            <TicketCard key={t.id} ticket={t} eventTitle={t.eventTitle} when={formatDateTime(t.startsAt)} />
           ))}
         </div>
       )}
 
       {orders.length > 0 ? (
-        <section className="mt-10">
-          <h2 className="mb-3 font-semibold">Orders</h2>
-          <ul className="divide-y divide-line rounded-2xl border border-line bg-surface">
+        <section className="mt-16">
+          <h2 className="mb-4 text-2xl">Orders</h2>
+          <ul className="bar-top">
             {orders.map((o) => (
-              <li key={o.id}>
-                <Link href={`/orders/${o.id}`} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
-                  <span>
-                    <span className="font-medium">{o.eventTitle}</span>
-                    <span className="text-muted">
-                      {" "}
-                      · {o.seatCount} seat{o.seatCount === 1 ? "" : "s"} · {formatDateTime(o.createdAt)}
+              <li key={o.id} className="border-b border-b-rule">
+                <Link
+                  href={`/orders/${o.id}`}
+                  className="row-link grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-6 gap-y-1 py-4 sm:grid-cols-[minmax(0,1fr)_auto_auto]"
+                >
+                  <span className="min-w-0">
+                    <span className="block font-semibold">{o.eventTitle}</span>
+                    <span className="label block text-ink-2">
+                      {o.seatCount} seat{o.seatCount === 1 ? "" : "s"}, ordered {formatDateTime(o.createdAt)}
                     </span>
                   </span>
-                  <span className="flex items-center gap-3">
-                    {formatMoney(o.amountMinor, o.currency)}
+                  <span className="figure text-lg sm:text-xl">{formatMoney(o.amountMinor, o.currency)}</span>
+                  <span className="col-start-2 justify-self-end sm:col-start-auto">
                     <Badge status={o.status} />
                   </span>
                 </Link>

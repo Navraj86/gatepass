@@ -24,21 +24,26 @@ function Events() {
     <>
       <PageTitle title="Door scanning" subtitle="Pick the event you are working." />
       {events.length === 0 ? (
-        <p className="text-muted">No events assigned to you yet. Ask the organizer to add you as door staff.</p>
+        <p className="bar-top pt-5 text-ink-2">
+          No events assigned to you yet. Ask the organizer to add you as door staff.
+        </p>
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="bar-top">
           {events.map((e) => (
-            <li key={e.id}>
+            <li key={e.id} className="border-b border-b-rule">
               <Link
                 href={`/staff/scan/${e.id}`}
-                className="block rounded-2xl border border-line bg-surface p-4 transition hover:border-accent"
+                className="row-link grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-6 gap-y-1 py-5"
               >
-                <span className="font-semibold">{e.title}</span>
-                <span className="block text-sm text-muted">
-                  {e.venue} · {formatDateTime(e.startsAt)}
+                <span className="min-w-0">
+                  <span className="display block text-title">{e.title}</span>
+                  <span className="label mt-1 block text-md text-ink-2">
+                    {e.venue}, {formatDateTime(e.startsAt)}
+                  </span>
                 </span>
-                <span className="mt-2 block text-sm">
-                  {e.checkedIn} of {e.validTickets} checked in
+                <span className="text-right">
+                  <span className="figure block text-2xl">{e.checkedIn}</span>
+                  <span className="label text-ink-2">of {e.validTickets} checked in</span>
                 </span>
               </Link>
             </li>

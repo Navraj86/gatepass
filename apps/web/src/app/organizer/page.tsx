@@ -27,23 +27,25 @@ function Events() {
       />
       {error ? <Notice tone="error">{error}</Notice> : null}
       {!events && !error ? <Spinner /> : null}
-      {events?.length === 0 ? <p className="text-muted">No events yet. Create one to set up its seat map.</p> : null}
+      {events?.length === 0 ? (
+        <p className="bar-top pt-5 text-ink-2">No events yet. Create one to set up its seat map.</p>
+      ) : null}
       {events && events.length > 0 ? (
-        <ul className="divide-y divide-line rounded-2xl border border-line bg-surface">
+        <ul className="bar-top">
           {events.map((e) => (
-            <li key={e.id}>
+            <li key={e.id} className="border-b border-b-rule">
               <Link
                 href={e.status === "draft" ? `/organizer/events/${e.id}` : `/organizer/events/${e.id}/sales`}
-                className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+                className="row-link flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-4"
               >
-                <span>
-                  <span className="font-medium">{e.title}</span>
-                  <span className="block text-sm text-muted">
-                    {e.venue} · {formatDateTime(e.startsAt)}
+                <span className="min-w-0">
+                  <span className="display block text-title">{e.title}</span>
+                  <span className="label mt-1 block text-md text-ink-2">
+                    {e.venue}, {formatDateTime(e.startsAt)}
                   </span>
                 </span>
-                <span className="flex items-center gap-4 text-sm">
-                  <span className="text-muted">
+                <span className="flex items-center gap-4">
+                  <span className="label tabular-nums text-md text-ink-2">
                     {e.soldCount ?? 0} / {e.seatCount ?? 0} sold
                   </span>
                   <Badge status={e.status} />

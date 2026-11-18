@@ -2,7 +2,7 @@ import type { SeatMapSeat } from "@gatepass/shared";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { EventBooking } from "@/components/booking/event-booking";
-import { formatDateTime, formatMoney } from "@/lib/format";
+import { formatMoney, formatMonthDay, formatTime, formatWeekday } from "@/lib/format";
 import { serverApi } from "@/lib/server-api";
 import type { PublicEvent, Section } from "@/lib/types";
 
@@ -30,30 +30,48 @@ export default async function EventPage({ params }: Params) {
   const data = await load(id);
   if (!data) notFound();
   const { event, sections, seats } = data;
-  const sold = seats.filter((s) => s.state === "sold").length;
+  const fromPrice = sections.length > 0 ? Math.min(...sections.map((s) => s.priceMinor)) : null;
 
   return (
-    <div>
-      <div className="mb-6">
-        <p className="text-sm text-muted">{formatDateTime(event.startsAt)}</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">{event.title}</h1>
-        <p className="mt-1 text-muted">{event.venue}</p>
-        {event.description ? <p className="mt-3 max-w-2xl">{event.description}</p> : null}
-        <div className="mt-4 flex flex-wrap gap-2 text-sm">
-          {sections.map((s) => (
-            <span key={s.id} className="rounded-full border border-line bg-surface px-3 py-1">
-              {s.name} <span className="text-muted">{formatMoney(s.priceMinor, event.currency)}</span>
-            </span>
-          ))}
-          <span className="rounded-full px-3 py-1 text-muted">
-            {seats.length - sold} of {seats.length} seats left
-          </span>
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-10">
+      <section
+        aria-labelledby="event-title"
+        className="grid grid-cols-[minmax(0,1fr)] items-end gap-x-8 gap-y-8 lg:grid-cols-12"
+      >
+        <div className="min-w-0 lg:col-span-7">
+          <p className="label text-md text-ink-2">{event.venue}</p>
+          <h1 id="event-title" className="mt-3 text-display-s">
+            {event.title}
+          </h1>
+          {event.description ? <p className="lead mt-4 text-ink-2">{event.description}</p> : null}
         </div>
-      </div>
+
+        <dl className="grid grid-cols-3 border-y-4 border-ink lg:col-span-5">
+          <div className="py-4 pr-4">
+            <dt className="label text-ink-2">Date</dt>
+            <dd className="figure mt-1 text-md sm:text-xl">
+              <time dateTime={event.startsAt}>
+                {formatWeekday(event.startsAt)}, {formatMonthDay(event.startsAt)}
+              </time>
+            </dd>
+          </div>
+          <div className="border-l border-rule px-4 py-4">
+            <dt className="label text-ink-2">Starts</dt>
+            <dd className="figure mt-1 text-md sm:text-xl">{formatTime(event.startsAt)}</dd>
+          </div>
+          <div className="border-l border-rule py-4 pl-4">
+            <dt className="label text-ink-2">From</dt>
+            <dd className="figure mt-1 text-md sm:text-xl">
+              {fromPrice != null ? formatMoney(fromPrice, event.currency) : null}
+            </dd>
+          </div>
+        </dl>
+      </section>
+
       {event.status === "cancelled" ? (
-        <p className="text-bad">This event was cancelled.</p>
+        <p className="bar-top pt-5 text-lead font-semibold text-error">This event was cancelled.</p>
       ) : (
-        <EventBooking event={event} initialSeats={seats} />
+        <EventBooking event={event} initialSeats={seats} sections={sections} />
       )}
     </div>
   );

@@ -52,22 +52,21 @@ export function OrderView({ orderId, poll = false }: { orderId: string; poll?: b
 
   const { order, tickets } = data;
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-8">
       <Card>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold">{order.eventTitle}</h2>
-            <p className="text-sm text-muted">
-              {order.venue} · {formatDateTime(order.startsAt)}
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="text-2xl">{order.eventTitle}</h2>
+            <p className="label mt-2 text-md text-ink-2">
+              {order.venue}, {formatDateTime(order.startsAt)}
             </p>
           </div>
           <Badge status={order.status} />
         </div>
-        <p className="mt-3 text-sm">
-          {formatMoney(order.amountMinor, order.currency)}
+        <p className="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span className="figure text-3xl">{formatMoney(order.amountMinor, order.currency)}</span>
           {order.chargedAmountMinor && order.chargedCurrency && order.chargedCurrency !== order.currency ? (
-            <span className="text-muted">
-              {" "}
+            <span className="text-ink-2">
               (charged {formatMoney(order.chargedAmountMinor, order.chargedCurrency)} including taxes)
             </span>
           ) : null}
@@ -76,9 +75,9 @@ export function OrderView({ orderId, poll = false }: { orderId: string; poll?: b
       </Card>
 
       {tickets.length > 0 ? (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-6 xl:grid-cols-2">
           {tickets.map((t) => (
-            <TicketCard key={t.id} ticket={t} />
+            <TicketCard key={t.id} ticket={t} eventTitle={order.eventTitle} when={formatDateTime(order.startsAt)} />
           ))}
         </div>
       ) : null}
