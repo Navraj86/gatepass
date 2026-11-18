@@ -78,3 +78,21 @@ export type OrganizerOrder = {
 };
 
 export type StaffMember = { id: string; name: string; email: string };
+
+export type StaffEvent = {
+  id: string;
+  title: string;
+  venue: string;
+  startsAt: string;
+  validTickets: number;
+  checkedIn: number;
+};
+
+type ScannedSeat = { sectionName: string; rowLabel: string; seatNumber: number };
+
+export type ScanResult =
+  | { result: "valid"; seat: ScannedSeat; holderName: string }
+  | { result: "duplicate"; seat: ScannedSeat; scannedAt: string; scannedByName: string }
+  | { result: "refunded"; seat: ScannedSeat }
+  | { result: "wrong_event"; eventTitle: string }
+  | { result: "invalid" };
