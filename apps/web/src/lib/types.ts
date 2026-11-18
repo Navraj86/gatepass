@@ -43,3 +43,38 @@ export type Order = {
   expiresAt: string;
   paidAt: string | null;
 };
+
+export type OrganizerEvent = PublicEvent & { createdAt: string; seatCount?: number; soldCount?: number };
+
+export type OrganizerSection = Section & {
+  seatCount: number;
+  rowCount: number;
+  firstRow: string | null;
+  lastRow: string | null;
+};
+
+export type EventStats = {
+  totalSeats: number;
+  sold: number;
+  held: number;
+  revenueMinor: number;
+  checkedIn: number;
+  validTickets: number;
+  paidOrders: number;
+  refundingOrders: number;
+};
+
+export type OrganizerOrder = {
+  id: string;
+  status: OrderStatus;
+  amountMinor: number;
+  currency: string;
+  createdAt: string;
+  paidAt: string | null;
+  buyerName: string;
+  buyerEmail: string;
+  seatCount: number;
+  scannedCount: number;
+};
+
+export type StaffMember = { id: string; name: string; email: string };

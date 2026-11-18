@@ -66,7 +66,8 @@ organizerRouter.get("/organizer/events/:eventId", requireEventOwner, async (req,
     `select sec.id, sec.name, sec.price_minor as "priceMinor",
             count(s.id)::int as "seatCount",
             count(distinct s.row_label)::int as "rowCount",
-            min(s.row_label) as "firstRow", max(s.row_label) as "lastRow"
+            (array_agg(s.row_label order by length(s.row_label), s.row_label))[1] as "firstRow",
+            (array_agg(s.row_label order by length(s.row_label) desc, s.row_label desc))[1] as "lastRow"
      from sections sec
      left join seats s on s.section_id = sec.id
      where sec.event_id = $1

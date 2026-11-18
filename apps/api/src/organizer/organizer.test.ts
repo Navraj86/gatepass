@@ -40,14 +40,14 @@ describe("organizer events", () => {
     await request(app)
       .post(`/api/organizer/events/${eventId}/sections`)
       .set(organizer)
-      .send({ name: "Balcony", priceMinor: 2500, rows: 2, seatsPerRow: 8 })
+      .send({ name: "Balcony", priceMinor: 2500, rows: 25, seatsPerRow: 8 })
       .expect(201);
 
     const detail = await request(app).get(`/api/organizer/events/${eventId}`).set(organizer).expect(200);
     const sections = detail.body.sections as { name: string; seatCount: number; firstRow: string; lastRow: string }[];
     expect(sections.map((s) => [s.name, s.seatCount, s.firstRow, s.lastRow])).toEqual([
       ["Floor", 30, "A", "C"],
-      ["Balcony", 16, "D", "E"],
+      ["Balcony", 200, "D", "AB"],
     ]);
 
     // Drafts are not public yet.
