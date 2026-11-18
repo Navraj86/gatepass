@@ -188,7 +188,7 @@ function Scanner({ eventId }: { eventId: string }) {
           )}
           onClick={() => setShowing(undefined)}
         >
-          <span className="wordmark text-[clamp(3rem,14vw,9rem)]">{shown.title}</span>
+          <span className="wordmark text-[clamp(2.25rem,11vw,9rem)]">{shown.title}</span>
           <span className="figure max-w-2xl text-2xl sm:text-3xl">{shown.detail}</span>
           {shown.who ? <span className="label text-xl">{shown.who}</span> : null}
           <span className="label mt-6 whitespace-nowrap text-md">Tap to scan the next ticket</span>

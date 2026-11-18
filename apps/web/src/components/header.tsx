@@ -19,11 +19,19 @@ export function Header() {
 
   return (
     <header className="band-ink sticky top-0 z-(--z-sticky-nav) bg-ink text-on-ink">
-      <div className="frame flex h-16 items-stretch gap-6">
-        <Link href="/" aria-label="Gatepass, all events" className="wordmark flex items-center text-xl sm:text-2xl">
+      {/* On phones the nav drops to its own row under the wordmark so every link stays in view. */}
+      <div className="frame flex flex-wrap items-stretch gap-x-6">
+        <Link
+          href="/"
+          aria-label="Gatepass, all events"
+          className="wordmark flex h-16 items-center text-xl sm:text-2xl"
+        >
           Gatepass
         </Link>
-        <nav aria-label="Main" className="flex min-w-0 flex-1 items-stretch gap-1 overflow-x-auto">
+        <nav
+          aria-label="Main"
+          className="order-last flex h-12 w-full min-w-0 items-stretch gap-1 overflow-x-auto border-t border-t-ink-2 sm:order-none sm:h-16 sm:w-auto sm:flex-1 sm:border-t-0"
+        >
           {links
             .filter((l) => l.show)
             .map((l) => {
@@ -46,7 +54,7 @@ export function Header() {
               );
             })}
         </nav>
-        <div className="flex shrink-0 items-center gap-4">
+        <div className="ml-auto flex h-16 shrink-0 items-center gap-4 sm:ml-0">
           {loading ? null : user ? (
             <>
               <span className="label hidden text-md text-on-ink-muted md:inline">{user.name}</span>

@@ -46,7 +46,7 @@ function Events() {
                 </span>
                 <span className="flex items-center gap-4">
                   <span className="label tabular-nums text-md text-ink-2">
-                    {e.soldCount ?? 0} / {e.seatCount ?? 0} sold
+                    {(e.soldCount ?? 0).toLocaleString()} / {(e.seatCount ?? 0).toLocaleString()} sold
                   </span>
                   <Badge status={e.status} />
                 </span>

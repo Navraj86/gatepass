@@ -75,7 +75,7 @@ function Sales({ eventId }: { eventId: string }) {
         <Stat
           label="Revenue"
           value={formatMoney(stats.revenueMinor, event.currency)}
-          detail={`${stats.paidOrders} paid orders${stats.refundingOrders ? `, ${stats.refundingOrders} refunding` : ""}`}
+          detail={`${stats.paidOrders} paid ${stats.paidOrders === 1 ? "order" : "orders"}${stats.refundingOrders ? `, ${stats.refundingOrders} refunding` : ""}`}
         />
         <Stat
           label="Checked in"

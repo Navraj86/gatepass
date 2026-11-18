@@ -18,7 +18,7 @@ export const checkoutSchema = z.object({
 });
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 
-const futureDate = z.coerce.date();
+const futureDate = z.coerce.date({ error: "Pick a date and time" });
 
 const eventFields = {
   title: z.string().trim().min(3, "Title is too short").max(120),
@@ -42,8 +42,12 @@ export const MAX_SEATS_PER_EVENT = 5000;
 export const createSectionSchema = z.object({
   name: z.string().trim().min(1, "Name the section").max(60),
   priceMinor: z.number().int().min(50, "Minimum price is 0.50").max(1_000_000),
-  rows: z.number().int().min(1).max(60),
-  seatsPerRow: z.number().int().min(1).max(100),
+  rows: z.number({ error: "Enter a number of rows" }).int().min(1, "At least 1 row").max(60, "At most 60 rows"),
+  seatsPerRow: z
+    .number({ error: "Enter a number of seats" })
+    .int()
+    .min(1, "At least 1 seat")
+    .max(100, "At most 100 seats per row"),
 });
 export type CreateSectionInput = z.infer<typeof createSectionSchema>;
 

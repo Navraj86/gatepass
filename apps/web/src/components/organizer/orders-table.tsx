@@ -82,7 +82,7 @@ export function OrdersTable({ eventId, onRefund }: { eventId: string; onRefund: 
           <Notice tone="error">{error}</Notice>
         </div>
       ) : null}
-      <div className="bar-top overflow-x-auto">
+      <div className="bar-top relative overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead className="label border-b border-b-rule text-ink-2">
             <tr>
