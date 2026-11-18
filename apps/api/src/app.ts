@@ -11,6 +11,7 @@ import { seatBus } from "./live/seat-bus.js";
 import { httpLogger } from "./observability/logger.js";
 import { measureRequests, registry } from "./observability/metrics.js";
 import { ordersRouter } from "./orders/routes.js";
+import { organizerRouter } from "./organizer/routes.js";
 import { webhookRouter } from "./payments/routes.js";
 import { seatsRouter } from "./seats/routes.js";
 
@@ -58,6 +59,7 @@ export function createApp() {
 
   app.use("/api", seatsRouter);
   app.use("/api", ordersRouter);
+  app.use("/api", organizerRouter);
 
   app.use(notFound);
   app.use(errorHandler);
