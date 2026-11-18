@@ -4,6 +4,8 @@ import helmet from "helmet";
 import { auth } from "./auth/auth.js";
 import { currentUser, requireUser } from "./auth/middleware.js";
 import { pool } from "./db/client.js";
+import { docsRouter } from "./http/openapi.js";
+import { lifecycle } from "./lifecycle.js";
 import { sameOrigin } from "./http/origin.js";
 import { errorHandler, notFound } from "./http/problem.js";
 import { byIp, rateLimit } from "./http/rate-limit.js";
@@ -41,8 +43,8 @@ export function createApp() {
       () => "down",
     );
     const bus = (await seatBus().ready()) ? "up" : "down";
-    const ok = db === "up" && bus === "up";
-    res.status(ok ? 200 : 503).json({ status: ok ? "ok" : "error", db, bus });
+    const ok = db === "up" && bus === "up" && !lifecycle.draining;
+    res.status(ok ? 200 : 503).json({ status: ok ? "ok" : "error", db, bus, draining: lifecycle.draining });
   });
 
   // Raw-body routes go before express.json(): webhook signatures and Better
@@ -64,6 +66,7 @@ export function createApp() {
   app.use("/api", organizerRouter);
   app.use("/api", staffRouter);
   app.use("/api", meRouter);
+  app.use("/api", docsRouter);
 
   app.use(notFound);
   app.use(errorHandler);
