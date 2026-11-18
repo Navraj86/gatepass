@@ -1,5 +1,10 @@
 node_modules
 dist
+.next
 .env
+.env.local
+*.tsbuildinfo
+next-env.d.ts
 infra/certs/
-apps/api/spikes/dodo/out/
+load/users.json
+apps/api/spikes/
