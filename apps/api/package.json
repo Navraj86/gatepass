@@ -20,7 +20,7 @@
   "dependencies": {
     "@gatepass/shared": "workspace:*",
     "better-auth": "^1.7.26",
-    "dodopayments": "^2.61.1",
+    "dodopayments": "^2.62.0",
     "dotenv": "^18.0.9",
     "drizzle-orm": "^0.45.4",
     "express": "^5.3.0",
