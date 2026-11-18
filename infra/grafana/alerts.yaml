@@ -1,0 +1,49 @@
+# Metric alerts for Grafana Cloud (Mimir ruler). Load with:
+#   mimirtool rules load infra/grafana/alerts.yaml --address=$GRAFANA_PROM_RULER_URL --id=$GRAFANA_PROM_USER --key=$GRAFANA_CLOUD_TOKEN
+# Route them to email with a contact point in Grafana Cloud alerting.
+namespace: gatepass
+groups:
+  - name: gatepass-api
+    rules:
+      - alert: ApiNotReady
+        expr: probe_success{job="gatepass-ready"} == 0
+        for: 2m
+        labels:
+          severity: page
+        annotations:
+          summary: "{{ $labels.instance }} has failed /api/health/ready for 2 minutes"
+
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_request_duration_seconds_count{status=~"5.."}[5m]))
+            / sum(rate(http_request_duration_seconds_count[5m])) > 0.02
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "More than 2% of API requests are failing with 5xx"
+
+      - alert: SlowRequests
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(http_request_duration_seconds_bucket{route!~".*/stream"}[5m]))) > 0.5
+        for: 5m
+        labels:
+          severity: warn
+        annotations:
+          summary: "API p95 latency is above 500 ms"
+
+      # Informational: the database stopped an oversell, so the system worked, but a person should look.
+      - alert: OversellBlocked
+        expr: increase(oversell_attempts_blocked_total[10m]) > 0
+        labels:
+          severity: info
+        annotations:
+          summary: "An oversell was blocked at {{ $labels.where }}"
+
+      - alert: RefundsFailing
+        expr: increase(refund_failures_total[30m]) > 0
+        labels:
+          severity: warn
+        annotations:
+          summary: "A refund failed and needs a retry from the organizer page"

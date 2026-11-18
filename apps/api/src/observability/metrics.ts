@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import client from "prom-client";
+import { pool } from "../db/client.js";
 
 export const registry = new client.Registry();
 client.collectDefaultMetrics({ register: registry });
@@ -78,6 +79,19 @@ export const emailsSent = new client.Counter({
   help: "Ticket emails by result",
   labelNames: ["result"] as const,
   registers: [registry],
+});
+
+// Read on scrape, so the numbers are exact at that moment and cost nothing between scrapes.
+new client.Gauge({
+  name: "pg_pool_connections",
+  help: "PostgreSQL pool connections by state",
+  labelNames: ["state"] as const,
+  registers: [registry],
+  collect() {
+    this.set({ state: "total" }, pool.totalCount);
+    this.set({ state: "idle" }, pool.idleCount);
+    this.set({ state: "waiting" }, pool.waitingCount);
+  },
 });
 
 export function measureRequests(req: Request, res: Response, next: NextFunction) {

@@ -1,0 +1,128 @@
+// Grafana Alloy: the only agent on the box. It scrapes both API instances, probes their
+// readiness, reads every container's logs plus the backup log, and ships it all to
+// Grafana Cloud so monitoring outlives the VPS.
+
+// ---------- Metrics ----------
+
+prometheus.scrape "api" {
+  job_name        = "gatepass-api"
+  scrape_interval = "15s"
+  targets = [
+    {"__address__" = "api-1:4000", "instance" = "api-1"},
+    {"__address__" = "api-2:4000", "instance" = "api-2"},
+  ]
+  forward_to = [prometheus.remote_write.cloud.receiver]
+}
+
+// probe_success{instance="api-1"} drives the "readiness failing" alert.
+prometheus.exporter.blackbox "ready" {
+  config = "{ modules: { http_2xx: { prober: http, timeout: 5s } } }"
+
+  target {
+    name    = "api-1"
+    address = "http://api-1:4000/api/health/ready"
+    module  = "http_2xx"
+  }
+
+  target {
+    name    = "api-2"
+    address = "http://api-2:4000/api/health/ready"
+    module  = "http_2xx"
+  }
+}
+
+discovery.relabel "ready" {
+  targets = prometheus.exporter.blackbox.ready.targets
+
+  rule {
+    source_labels = ["__param_target"]
+    regex         = "http://([^:]+):.*"
+    target_label  = "instance"
+  }
+}
+
+prometheus.scrape "ready" {
+  job_name        = "gatepass-ready"
+  scrape_interval = "15s"
+  targets         = discovery.relabel.ready.output
+  forward_to      = [prometheus.remote_write.cloud.receiver]
+}
+
+prometheus.remote_write "cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_PROM_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_PROM_USER")
+      password = sys.env("GRAFANA_CLOUD_TOKEN")
+    }
+  }
+}
+
+// ---------- Logs ----------
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// Keep only this stack's containers and label each line with its compose service.
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    regex         = "gatepass"
+    action        = "keep"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+}
+
+loki.source.docker "containers" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.relabel.containers.output
+  relabel_rules = discovery.relabel.containers.rules
+  forward_to    = [loki.process.levels.receiver]
+}
+
+// pino writes numeric levels (30 info, 40 warn, 50 error); turn them into a small label.
+loki.process "levels" {
+  stage.json {
+    expressions = { level = "level" }
+  }
+
+  stage.template {
+    source   = "level"
+    template = `{{ if eq .Value "60" }}fatal{{ else if eq .Value "50" }}error{{ else if eq .Value "40" }}warn{{ else if .Value }}info{{ end }}`
+  }
+
+  stage.labels {
+    values = { level = "" }
+  }
+
+  forward_to = [loki.write.cloud.receiver]
+}
+
+// infra/backup.sh appends "backup ok" lines here; an alert fires if none arrive for 26 h.
+local.file_match "backup" {
+  path_targets = [{"__path__" = "/var/log/gatepass/backup.log", "service" = "backup"}]
+}
+
+loki.source.file "backup" {
+  targets    = local.file_match.backup.targets
+  forward_to = [loki.write.cloud.receiver]
+}
+
+loki.write "cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_LOKI_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_LOKI_USER")
+      password = sys.env("GRAFANA_CLOUD_TOKEN")
+    }
+  }
+}

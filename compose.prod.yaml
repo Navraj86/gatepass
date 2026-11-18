@@ -115,7 +115,8 @@ services:
   alloy:
     image: grafana/alloy:v1.10.0
     restart: unless-stopped
-    command: ["run", "--server.http.listen-addr=127.0.0.1:12345", "--storage.path=/var/lib/alloy", "/etc/alloy/config.alloy"]
+    command:
+      ["run", "--server.http.listen-addr=127.0.0.1:12345", "--storage.path=/var/lib/alloy", "/etc/alloy/config.alloy"]
     environment:
       GRAFANA_PROM_URL: ${GRAFANA_PROM_URL:-}
       GRAFANA_PROM_USER: ${GRAFANA_PROM_USER:-}

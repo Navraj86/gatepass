@@ -1,0 +1,14 @@
+# Log alerts for Grafana Cloud (Loki ruler). Load with:
+#   mimirtool rules load infra/grafana/log-alerts.yaml --backend=loki --address=$GRAFANA_LOKI_RULER_URL --id=$GRAFANA_LOKI_USER --key=$GRAFANA_CLOUD_TOKEN
+namespace: gatepass
+groups:
+  - name: gatepass-backup
+    interval: 1h
+    rules:
+      # infra/backup.sh writes "backup ok" after every nightly upload.
+      - alert: BackupMissing
+        expr: absent_over_time({service="backup"} |= "backup ok" [26h])
+        labels:
+          severity: page
+        annotations:
+          summary: "No successful database backup in the last 26 hours"
