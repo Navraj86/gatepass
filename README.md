@@ -13,26 +13,26 @@
 
 ## At a glance
 
-|                |                                                                                                                                                                    |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Problem**    | An on-sale is a thundering herd on a few thousand rows. The naive version oversells, deadlocks, or charges people for seats they never get.                        |
+|                |                                                                                                                                                                     |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Problem**    | An on-sale is a thundering herd on a few thousand rows. The naive version oversells, deadlocks, or charges people for seats they never get.                         |
 | **Guarantee**  | Zero oversells, enforced by PostgreSQL itself (row locks plus a partial unique index) and covered by nine concurrency tests that run against real PostgreSQL in CI. |
-| **Product**    | A live seat map, ten-minute holds, hosted checkout, emailed QR tickets, an organizer dashboard and a phone scanner for the door.                                   |
-| **Stack**      | TypeScript end to end: Next.js 16 and React 19, Express 5, PostgreSQL 17, Redis 8, Drizzle, Zod, Better Auth, Dodo Payments, Resend.                               |
-| **Operations** | Two API instances behind nginx, rolling deploys with no downtime, Prometheus metrics with Grafana alerts, nightly backups.                                         |
+| **Product**    | A live seat map, ten-minute holds, hosted checkout, emailed QR tickets, an organizer dashboard and a phone scanner for the door.                                    |
+| **Stack**      | TypeScript end to end: Next.js 16 and React 19, Express 5, PostgreSQL 17, Redis 8, Drizzle, Zod, Better Auth, Dodo Payments, Resend.                                |
+| **Operations** | Two API instances behind nginx, rolling deploys with no downtime, Prometheus metrics with Grafana alerts, nightly backups.                                          |
 
 ## The product
 
 **Buyers** pick seats on a map that updates live, see section, row, seat and price side by side, and hold up to six seats for ten minutes while they pay.
 
-| Choosing seats                                                                                                                          | Seats held, paying                                                                                    |
-| --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Choosing seats                                                                                                                                     | Seats held, paying                                                                         |
+| -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | ![The seat map with three seats selected in black and a table listing each seat with its price and a Hold 3 seats button](docs/images/booking.png) | ![The same seats now orange, a 9:58 countdown and the checkout form](docs/images/hold.png) |
 
 **Organizers** create events, lay out priced sections, publish, watch sales and refund orders. The screenshots below are from right after the local load test: 5,000 simulated buyers in 30 seconds left 1,668 seats sold to 882 paid orders, and not one seat sold twice.
 
-| Sales dashboard                                                                                                | The same event's public map                                                                               |
-| -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Sales dashboard                                                                                        | The same event's public map                                                                                       |
+| ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
 | ![Organizer dashboard: 1,668 of 2,000 sold, $100,630 revenue, the orders table](docs/images/sales.png) | ![Seat map after the load test, mostly grey sold seats with scattered open ones](docs/images/after-load-test.png) |
 
 **Door staff** scan tickets with a phone camera. A code turns green once; any later scan shows when it was first used and by whom.
@@ -43,15 +43,15 @@
 
 ## Proven, not promised
 
-| Scenario                                                    | Result                                                                  |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------- |
-| 200 parallel holds on one seat (CI test C1)                 | 1 success, 199 clean `409 Conflict` responses                           |
-| The same payment webhook delivered 10 times at once (C4)    | 1 paid order, 1 ticket per seat, 1 email                                |
-| 50 parallel scans of one ticket (C6)                        | Exactly 1 green                                                         |
-| 500 buyers in 10 s, buying for real (one laptop)            | 0 failed requests, hold p50 203 ms and p95 529 ms                       |
-| The same run plus 500 live map viewers                      | 0 disconnects; update lag 343 ms on average, including 250 ms batching  |
-| 5,000 buyers in 30 s against one API process (one laptop)   | The process saturated near 270 req/s, and still every audit check read 0 |
-| A rolling deploy under steady load (local)                  | 8,328 requests, 0 errors                                                |
+| Scenario                                                  | Result                                                                   |
+| --------------------------------------------------------- | ------------------------------------------------------------------------ |
+| 200 parallel holds on one seat (CI test C1)               | 1 success, 199 clean `409 Conflict` responses                            |
+| The same payment webhook delivered 10 times at once (C4)  | 1 paid order, 1 ticket per seat, 1 email                                 |
+| 50 parallel scans of one ticket (C6)                      | Exactly 1 green                                                          |
+| 500 buyers in 10 s, buying for real (one laptop)          | 0 failed requests, hold p50 203 ms and p95 529 ms                        |
+| The same run plus 500 live map viewers                    | 0 disconnects; update lag 343 ms on average, including 250 ms batching   |
+| 5,000 buyers in 30 s against one API process (one laptop) | The process saturated near 270 req/s, and still every audit check read 0 |
+| A rolling deploy under steady load (local)                | 8,328 requests, 0 errors                                                 |
 
 Every load run ends with [`load/audit.sql`](load/audit.sql), which must read 0 on every row: at most one valid ticket per seat, sold seats equal valid tickets, no paid order without tickets. The first runs found two real bugs, both fixed with regression tests: a **connection pool starvation** where 20 pooled connections waited on a 21st, and **QR rendering on the hot path**, which took a quarter of API CPU (fixing it cut hold p50 from 2.24 s to 203 ms). The method and the numbers are in [`load/README.md`](load/README.md). The figures for two instances on the production VPS will be added after they are measured there.
 
@@ -125,30 +125,30 @@ A hold lapses by itself: a seat counts as held only while `held_until > now()`. 
 <details>
 <summary><b>The nine concurrency tests</b> (real PostgreSQL, every pull request)</summary>
 
-| Test | Must hold                                                                                    |
-| ---- | -------------------------------------------------------------------------------------------- |
-| C1   | 200 parallel holds on one seat: exactly 1 success, 199 clean 409s                            |
-| C2   | Overlapping multi-seat holds in opposite orders: all or nothing, no deadlocks                |
-| C3   | An expired hold is taken by a second buyer; the first buyer's checkout is refused            |
+| Test | Must hold                                                                                              |
+| ---- | ------------------------------------------------------------------------------------------------------ |
+| C1   | 200 parallel holds on one seat: exactly 1 success, 199 clean 409s                                      |
+| C2   | Overlapping multi-seat holds in opposite orders: all or nothing, no deadlocks                          |
+| C3   | An expired hold is taken by a second buyer; the first buyer's checkout is refused                      |
 | C4   | One `payment.succeeded` delivered 10 times in parallel: one paid order, one ticket per seat, one email |
-| C5   | Payment arrives after the hold lapsed and the seat was resold: the order refunds, no second ticket |
-| C6   | 50 parallel scans of one ticket: exactly one green                                           |
-| C7   | 10 parallel "Pay" clicks: one pending order, one checkout session                            |
-| C8   | Refund, then resell the seat: the new ticket is allowed                                      |
-| C9   | Cancel races payment: paid with tickets, or refunding; never tickets on released seats       |
+| C5   | Payment arrives after the hold lapsed and the seat was resold: the order refunds, no second ticket     |
+| C6   | 50 parallel scans of one ticket: exactly one green                                                     |
+| C7   | 10 parallel "Pay" clicks: one pending order, one checkout session                                      |
+| C8   | Refund, then resell the seat: the new ticket is allowed                                                |
+| C9   | Cancel races payment: paid with tickets, or refunding; never tickets on released seats                 |
 
 </details>
 
 ## Decisions and trade-offs
 
-| Decision                                     | Why                                                                                 | Cost accepted                                                         |
-| -------------------------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| PostgreSQL decides, Redis only relays        | Redis locks would be a second source of truth that can disagree with the database   | Hot rows contend in PostgreSQL; the lock timeout keeps that bounded   |
-| Hold expiry is derived, not swept            | No job to fall behind, no stale window                                              | Every availability read compares against `now()`                      |
-| Server-Sent Events, not WebSockets           | Updates flow one way; SSE reconnects by itself and passes Cloudflare as plain HTTP  | No browser-to-server channel, which nothing here needs                |
-| Webhooks are the only payment truth          | Return URLs can be lost or forged                                                   | The return page polls until the webhook has settled the order         |
-| No job queue yet                             | Failures stay visible: metrics, a resend button, a retryable refunding state        | The first thing to add at real scale (BullMQ)                         |
-| `held_by` has no foreign key                 | The hold is the hottest write; a foreign key adds a lookup and a share lock per seat | That column's integrity rests on application code                    |
+| Decision                              | Why                                                                                  | Cost accepted                                                       |
+| ------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| PostgreSQL decides, Redis only relays | Redis locks would be a second source of truth that can disagree with the database    | Hot rows contend in PostgreSQL; the lock timeout keeps that bounded |
+| Hold expiry is derived, not swept     | No job to fall behind, no stale window                                               | Every availability read compares against `now()`                    |
+| Server-Sent Events, not WebSockets    | Updates flow one way; SSE reconnects by itself and passes Cloudflare as plain HTTP   | No browser-to-server channel, which nothing here needs              |
+| Webhooks are the only payment truth   | Return URLs can be lost or forged                                                    | The return page polls until the webhook has settled the order       |
+| No job queue yet                      | Failures stay visible: metrics, a resend button, a retryable refunding state         | The first thing to add at real scale (BullMQ)                       |
+| `held_by` has no foreign key          | The hold is the hottest write; a foreign key adds a lookup and a share lock per seat | That column's integrity rests on application code                   |
 
 <details>
 <summary><b>More detail:</b> the live map, check-in, auth, deploys and observability</summary>
