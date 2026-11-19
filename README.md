@@ -170,7 +170,7 @@ One VPS is not high availability. At real scale the next steps are PostgreSQL re
 
 ## Run it locally
 
-Needs Node 24, pnpm 10 and Docker.
+Needs Node 26, pnpm 10 and Docker.
 
 ```sh
 docker compose up -d                       # PostgreSQL and Redis
