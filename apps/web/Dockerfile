@@ -1,6 +1,5 @@
-FROM node:26-alpine AS base
-# Node 25+ no longer ships Corepack; install the pnpm version pinned in package.json "packageManager".
-RUN npm install -g pnpm@10.10.0
+FROM node:24-alpine AS base
+RUN corepack enable
 WORKDIR /app
 
 FROM base AS build
@@ -13,7 +12,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm --filter @gatepass/web build
 
 # Standalone output carries only the files the server traced, about a tenth of node_modules.
-FROM node:26-alpine AS runtime
+FROM node:24-alpine AS runtime
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000
 WORKDIR /app
 COPY --from=build --chown=node:node /app/apps/web/.next/standalone ./

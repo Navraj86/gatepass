@@ -1,6 +1,5 @@
-FROM node:26-alpine AS base
-# Node 25+ no longer ships Corepack; install the pnpm version pinned in package.json "packageManager".
-RUN npm install -g pnpm@10.10.0
+FROM node:24-alpine AS base
+RUN corepack enable
 WORKDIR /app
 
 FROM base AS build
