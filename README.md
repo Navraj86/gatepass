@@ -4,7 +4,7 @@
 
 [![Release](https://github.com/Navraj86/gatepass/actions/workflows/release.yml/badge.svg)](https://github.com/Navraj86/gatepass/actions/workflows/release.yml)
 
-**Live:** [gatepass.navraj.dev](https://gatepass.navraj.dev), with payments in Dodo Payments test mode, so no real money moves. Demo accounts: `attendee@gatepass.test`, `organizer@gatepass.test`, `staff@gatepass.test`.
+**Live:** [gatepass.navraj.dev](https://gatepass.navraj.dev), with payments in Dodo Payments test mode, so no real money moves. Sign in with password `gatepass` as `attendee@gatepass.test` (buy seats), `organizer@gatepass.test` (create events, watch sales) or `staff@gatepass.test` (scan tickets).
 
 <p align="center">
   <img src="docs/images/live-seat-race.gif" alt="Two browsers side by side. Buyer A selects three seats and holds them; on buyer B's map the same seats flash and turn taken, and hovering one reads Held by someone." width="100%">
