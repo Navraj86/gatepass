@@ -40,6 +40,8 @@ export const auth = betterAuth({
   // Sign-in and sign-up are limited in Express with the shared Redis limiter.
   rateLimit: { enabled: false },
   telemetry: { enabled: false },
-  // Load tests authenticate thousands of virtual users with seeded session tokens.
-  plugins: config.LOAD_TEST ? [bearer()] : [],
+  // The mobile scanner has no cookie jar: it keeps the token from the `set-auth-token` header
+  // and sends it as `Authorization: Bearer`. Those tokens are signed by the server. Only load
+  // tests may send raw, unsigned tokens, because seed-load writes sessions straight to the database.
+  plugins: [bearer({ requireSignature: !config.LOAD_TEST })],
 });

@@ -10,8 +10,8 @@ import { createSeatedEvent } from "./seed-event.js";
  *
  *   node dist/db/seed-load.js --users 5000 > load/run.json
  *
- * Only runs with LOAD_TEST=true, the same flag that enables bearer tokens and the
- * payment stub. Progress goes to stderr; the JSON on stdout is the run file.
+ * Only runs with LOAD_TEST=true, the same flag that makes the API accept these unsigned
+ * tokens and stub payments. Progress goes to stderr; the JSON on stdout is the run file.
  */
 const arg = (name: string, fallback: number) => {
   const i = process.argv.indexOf(`--${name}`);

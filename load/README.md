@@ -1,6 +1,6 @@
 # Load tests
 
-Four scenarios and an audit. Payments never reach Dodo: with `LOAD_TEST=true` the API swaps checkout creation for a stub and accepts bearer session tokens, and k6 signs the `payment.succeeded` webhook itself with the real webhook key, so the real verification and fulfillment code runs.
+Four scenarios and an audit. Payments never reach Dodo: with `LOAD_TEST=true` the API swaps checkout creation for a stub and accepts the run file's unsigned session tokens, and k6 signs the `payment.succeeded` webhook itself with the real webhook key, so the real verification and fulfillment code runs.
 
 | File          | What it does                                                                                                                                                                  |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
