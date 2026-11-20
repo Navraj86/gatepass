@@ -17,8 +17,8 @@
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Problem**    | An on-sale is a thundering herd on a few thousand rows. The naive version oversells, deadlocks, or charges people for seats they never get.                         |
 | **Guarantee**  | Zero oversells, enforced by PostgreSQL itself (row locks plus a partial unique index) and covered by nine concurrency tests that run against real PostgreSQL in CI. |
-| **Product**    | A live seat map, ten-minute holds, hosted checkout, emailed QR tickets, an organizer dashboard and a phone scanner for the door.                                    |
-| **Stack**      | TypeScript end to end: Next.js 16 and React 19, Express 5, PostgreSQL 17, Redis 8, Drizzle, Zod, Better Auth, Dodo Payments, Resend.                                |
+| **Product**    | A live seat map, ten-minute holds, hosted checkout, emailed QR tickets, an organizer dashboard, and a scanner for the door on the web and as a native app.          |
+| **Stack**      | TypeScript end to end: Next.js 16 and React 19, Expo and React Native, Express 5, PostgreSQL 17, Redis 8, Drizzle, Zod, Better Auth, Dodo Payments, Resend.         |
 | **Operations** | Two API instances behind nginx, rolling deploys with no downtime, Prometheus metrics with Grafana alerts, nightly backups.                                          |
 
 ## The product
@@ -60,6 +60,7 @@ Every load run ends with [`load/audit.sql`](load/audit.sql), which must read 0 o
 ```mermaid
 flowchart LR
   B[Browsers] --> CF[Cloudflare]
+  M[Scanner app] --> CF
   D[Dodo webhooks] --> CF
   CF --> N[nginx]
   N -- pages --> W[Next.js]
@@ -155,7 +156,8 @@ A hold lapses by itself: a seat counts as held only while `held_until > now()`. 
 
 - **Live map.** Each stream subscribes before it reads its snapshot, so no change falls into the gap. Changes are coalesced into 250 ms batches (last state wins), and held seats carry `heldUntil`, so browsers reopen them on time without a message. When Redis reconnects or an instance shuts down, streams close with a retry hint and browsers resync from a fresh snapshot. The map is a view: a stale seat costs a buyer a 409, never an oversell.
 - **Check-in.** Ticket codes are 128 random bits in Crockford base32 (26 characters, forgiving of O/0 and I/1 when typed). A scan is one conditional `UPDATE ... where scanned_at is null`. Staff see only the events they are assigned to.
-- **Auth.** Better Auth runs inside the API with sessions in PostgreSQL, so revoking a session is deleting a row and takes effect on the next request.
+- **Auth.** Better Auth runs inside the API with sessions in PostgreSQL, so revoking a session is deleting a row and takes effect on the next request. The website carries the session in an httpOnly cookie; the scanner app carries the same session as a server-signed bearer token kept in the phone's Keychain or Keystore.
+- **Scanner app.** [`apps/mobile`](apps/mobile) is an Expo app for door staff: sign in, pick an event, scan. It calls the same two endpoints as the web scanner and shares the ticket-code rules from `packages/shared`, so the exactly-once check stays in one place, the server.
 - **Deploys.** Every push to `main` runs CI, builds both images tagged with the commit and pushes them to GHCR. [`infra/deploy.sh`](infra/deploy.sh) migrates, restarts `api-1`, waits until nginx trusts it again, then restarts `api-2`. On SIGTERM an instance reports not ready, closes its streams with a retry hint, finishes in-flight requests and exits within 10 seconds.
 - **Observability.** Prometheus metrics for holds, payments, scans, stream count and update lag, blocked oversells and the connection pool, plus JSON logs carrying one request id from nginx through the API. The "On-sale night" dashboard and its alert rules are in [`infra/grafana`](infra/grafana); the [runbook](infra/runbook.md) covers backups and restores.
 - **Load tests never call Dodo.** With `LOAD_TEST=true` the API stubs checkout creation, and k6 signs the payment webhooks itself, so the real verification and fulfilment code runs.
@@ -180,6 +182,7 @@ pnpm --filter @gatepass/api db:migrate
 pnpm --filter @gatepass/api db:seed        # wipes local data, creates the demo accounts and event
 pnpm dev:api                               # http://localhost:4000, API docs at /api/docs
 pnpm dev:web                               # http://localhost:3000
+pnpm dev:mobile                            # the scanner app: open the QR code in Expo Go on your phone
 ```
 
 The demo password locally is `gatepass-demo`. Paying needs a Dodo Payments test-mode key in `.env`; everything else works without one. `pnpm test` runs the API suite against the `gatepass_test` database that compose creates, and `pnpm lint` and `pnpm typecheck` cover the whole repository.
@@ -187,7 +190,8 @@ The demo password locally is `gatepass-demo`. Paying needs a Dodo Payments test-
 ```text
 apps/api         Express API, Drizzle schema and migrations, tests
 apps/web         Next.js app for buyers, organizers and door staff
-packages/shared  Zod schemas and types used by both
+apps/mobile      Expo scanner app for door staff
+packages/shared  Zod schemas, types and ticket-code rules used by every app
 infra            nginx, Alloy, Grafana, deploy and backup scripts, runbook
 load             k6 scenarios, live-map viewers, SQL audit
 docs             payment spike notes and the images in this README

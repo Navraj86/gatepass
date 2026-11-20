@@ -6,6 +6,7 @@
   "scripts": {
     "dev:api": "pnpm --filter @gatepass/api dev",
     "dev:web": "pnpm --filter @gatepass/web dev",
+    "dev:mobile": "pnpm --filter @gatepass/mobile start",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm --filter @gatepass/api test",
     "build": "pnpm -r build",

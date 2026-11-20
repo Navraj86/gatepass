@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "Gatepass Scan",
+    "slug": "gatepass-scan",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#e6e3d9",
+    "ios": {
+      "bundleIdentifier": "dev.navraj.gatepass.scan",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "dev.navraj.gatepass.scan",
+      "adaptiveIcon": {
+        "backgroundColor": "#120f0c",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Gatepass Scan uses the camera to read ticket QR codes at the door.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#120f0c"
+        }
+      ]
+    ]
+  }
+}
